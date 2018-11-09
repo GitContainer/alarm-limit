@@ -67,6 +67,8 @@ def plot_ts(i, df = raw_data):
     plt.xticks(rotation = 'vertical')
     plt.title(col_name)    
     fname = 'SMM_result\\' + col_name.replace('.', '') + '_ts' + '.jpeg'
+    plt.xlabel('Date (YYYY-MM)')
+    plt.tight_layout()
     plt.savefig(fname)
     plt.show()
     return
@@ -79,6 +81,8 @@ def plot_hist(i, bins = 20, df = raw_data):
     plt.bar(edges[:-1], freq, width=np.diff(edges), ec="k", align="edge")
     plt.title(col_name)
     fname = 'SMM_result\\' + col_name.replace('.', '') + '_hist' + '.jpeg'
+    plt.ylabel('Count')
+    plt.tight_layout()
     plt.savefig(fname)
     plt.show()
     return
@@ -114,8 +118,10 @@ def plot_ts_zoomed(i, start_time, end_time, df = raw_data):
     plt.plot(x,y, 'o') 
     plt.xticks(rotation = 'vertical')
     plt.title(col_name)
-    plt.xlim(start_time, end_time)    
+    plt.xlim(start_time, end_time) 
+    plt.xlabel('DD HH:MM')
     fname = 'SMM_result\\' + col_name.replace('.', '') + '_ts' + '.jpeg'
+    plt.tight_layout()
     plt.savefig(fname)
     plt.show()
 
@@ -167,6 +173,32 @@ def plot_cor_matrix(cormatrix, colnames):
 cor_matrix = get_correlation_matrix(raw_data)
 colnames = get_colnames(raw_data)
 plot_cor_matrix(cor_matrix, colnames)
+
+
+###############################################################################
+# Cross correlation
+###############################################################################
+
+
+
+
+###############################################################################
+# Moving average
+###############################################################################
+def plot_moving_average(df, col_num, window_length = 24):
+    valid_ind = get_numeric_index(df, col_num)
+    x = df.iloc[valid_ind, 0]
+    subset = df.iloc[valid_ind, col_num]
+    ma = subset.rolling(window=24*60).mean()
+    
+    plt.plot(x, subset)
+    plt.plot(x, ma)
+    plt.xticks(rotation = 'vertical')
+    plt.show()
+    return
+
+plot_moving_average(raw_data, 2, window_length = 24)
+
 
 
 ###############################################################################
