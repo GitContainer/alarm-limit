@@ -166,6 +166,9 @@ def plot_alarm_setting_histogram(i, how_many_std = 3, df = raw_data):
 
 plot_alarm_setting_histogram(i = 2, how_many_std = 3, df = raw_data)    
 
+
+
+
 ind = get_numeric_index(raw_data, i = 3)
 y = get_y(raw_data, ind, i = 2)
 bins, p = get_pdf(y)
@@ -199,47 +202,47 @@ plt.bar(edges[:-1], freq, width=np.diff(edges), ec="k", align="edge")
 ###############################################################################
 # Alarm setting based on histogram
 ###############################################################################
-h = col_2.values
-mean = np.mean(h)
-std = np.std(h)
-
-cut_off = std*3
-lower, upper = mean - cut_off, mean + cut_off
-
-bins = np.arange(190, 225, 0.001)
-y_1 = stats.norm.pdf(bins, mean, std)
-
-fig, ax1 = plt.subplots()
-
-ax1.bar(edges[:-1], freq, width=np.diff(edges), ec="k", align="edge", color = 'yellow')
-#ax1.tick_params(axis='y', labelcolor=color)
-#ax1.set_xticklabels(ax1.get_xticklabels(), rotation='vertical')
-ax1.get_yaxis().set_visible(False)
-ax2 = ax1.twinx()
-ax2.plot(bins, y_1, color = 'green')
-ax2.set_ylim(0,0.09)
-ax2.axvline(x = mean, color = 'green')
-ax2.axvline(x = lower, color = 'red')
-ax2.axvline(x = upper, color = 'red')
-ax2.get_yaxis().set_visible(False)
-#color = 'tab:red'
-#ax1.set_ylabel('Extraction Current Load', color=color)
-
-  # instantiate a second axes that shares the same x-axis
-
-#color = 'tab:blue'
-#ax2.plot(time, col_2, color=color)
-#ax2.tick_params(axis='y', labelcolor=color)
-
-#color = 'tab:green'
-
-#ax2.set_ylabel('T-8220 Press (Torr)', color=color)
-#ax2.set_ylabel('E-8221A/B/C Inlet SM (kPa)', color=color)
-#ax2.set_ylabel('E-8221A/B/C Inlet SM (kPa)', color=color)
-#ax2.tick_params(axis='y', labelcolor=color)
-
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.show()
+#h = col_2.values
+#mean = np.mean(h)
+#std = np.std(h)
+#
+#cut_off = std*3
+#lower, upper = mean - cut_off, mean + cut_off
+#
+#bins = np.arange(190, 225, 0.001)
+#y_1 = stats.norm.pdf(bins, mean, std)
+#
+#fig, ax1 = plt.subplots()
+#
+#ax1.bar(edges[:-1], freq, width=np.diff(edges), ec="k", align="edge", color = 'yellow')
+##ax1.tick_params(axis='y', labelcolor=color)
+##ax1.set_xticklabels(ax1.get_xticklabels(), rotation='vertical')
+#ax1.get_yaxis().set_visible(False)
+#ax2 = ax1.twinx()
+#ax2.plot(bins, y_1, color = 'green')
+#ax2.set_ylim(0,0.09)
+#ax2.axvline(x = mean, color = 'green')
+#ax2.axvline(x = lower, color = 'red')
+#ax2.axvline(x = upper, color = 'red')
+#ax2.get_yaxis().set_visible(False)
+##color = 'tab:red'
+##ax1.set_ylabel('Extraction Current Load', color=color)
+#
+#  # instantiate a second axes that shares the same x-axis
+#
+##color = 'tab:blue'
+##ax2.plot(time, col_2, color=color)
+##ax2.tick_params(axis='y', labelcolor=color)
+#
+##color = 'tab:green'
+#
+##ax2.set_ylabel('T-8220 Press (Torr)', color=color)
+##ax2.set_ylabel('E-8221A/B/C Inlet SM (kPa)', color=color)
+##ax2.set_ylabel('E-8221A/B/C Inlet SM (kPa)', color=color)
+##ax2.tick_params(axis='y', labelcolor=color)
+#
+#fig.tight_layout()  # otherwise the right y-label is slightly clipped
+#plt.show()
 
 
 
@@ -250,46 +253,8 @@ plt.show()
 # Alarm setting based on histogram
 ###############################################################################
 
-plt.plot(bins, y_1)
-plt.show()
-
-freq, edges = np.histogram(h, bins=20)
-plt.bar(edges[:-1], freq, width=np.diff(edges), ec="k", align="edge")
 
 
-
-# Sample from a normal distribution using numpy's random number generator
-samples = h
-max_h = max(h)
-min_h = min(h)
-# Compute a histogram of the sample
-bins = np.linspace(190, 225, 20)
-histogram, bins = np.histogram(samples, bins=bins, normed=True)
-
-bin_centers = 0.5*(bins[1:] + bins[:-1])
-
-# Compute the PDF on the bin centers from scipy distribution object
-pdf = stats.norm.pdf(bin_centers)
-
-from matplotlib import pyplot as plt
-plt.figure(figsize=(6, 4))
-plt.plot(bin_centers, histogram, label="Histogram of samples")
-#plt.plot(bin_centers, pdf, label="PDF")
-plt.legend()
-plt.show()
-
-
-
-
-h.sort()
-fit = stats.norm.pdf(h, np.mean(h), np.std(h))  #this is a fitting indeed
-plt.plot(h,fit,'-o')
-plt.hist(h,normed=True)      #use this to draw histogram of your data
-plt.show()
-
-for item in h:
-    if not np.isnan(item):
-        print(item)
 
 
 
@@ -364,51 +329,38 @@ plot_cor_matrix(cor_matrix, colnames)
 ###############################################################################
 # Cross correlation
 ###############################################################################
-df = raw_data
-col_num = 2
-valid_ind = get_numeric_index(df, col_num)
-time = get_x(df, valid_ind)
-col_1 = df.iloc[valid_ind, 1]
-col_2 = df.iloc[valid_ind, 2]
-ma_2 = col_2.rolling(window = 24*60).mean()
-col_3 = df.iloc[valid_ind, 3]
-ma_3 = col_3.rolling(window = 24*60).mean()
-col_4 = df.iloc[valid_ind, 4]
-ma_4 = col_4.rolling(window = 24*60).mean()
+def plot_moving_average_and_load(i , mv_period = 24, df = raw_data):
+    valid_ind = get_numeric_index(df, i)
+    time = get_x(df, valid_ind)
+    col_1 = df.iloc[valid_ind, 1]
+    col_2 = df.iloc[valid_ind, i]
+    ma_2 = col_2.rolling(window = mv_period*60).mean()
+    y_label = df.columns[i]
+    
+    fig, ax1 = plt.subplots()
 
-#cross_cor = correlate(col_1[:3*24*60], col_2[:3*24*60], mode = 'same')
-#plt.plot(cross_cor, 'o')
-#t = 20*24*60
-#ma = col_2[:t].rolling(window = 24*60).mean()
-#
-#plt.plot(col_1[:t], label = col_1.name)
-#plt.plot(col_2[:t], label = col_2.name)
-#plt.plot(ma, label = 'MA')
-#plt.legend()
+    color = 'tab:red'
+    ax1.set_ylabel('Extraction Current Load', color=color)
+    ax1.plot(time, col_1, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation='vertical')
+    ax2 = ax1.twinx()  
+        
+    color = 'tab:green'
+    ax2.plot(time, ma_2, color=color)
+    ax2.set_ylabel(y_label, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+    
+    fig.tight_layout()  
+    plt.show()
+    return
+    
+plot_moving_average_and_load(i = 3 , mv_period = 24, df = raw_data)
 
 
-fig, ax1 = plt.subplots()
 
-color = 'tab:red'
-ax1.set_ylabel('Extraction Current Load', color=color)
-ax1.plot(time, col_1, color=color)
-ax1.tick_params(axis='y', labelcolor=color)
-ax1.set_xticklabels(ax1.get_xticklabels(), rotation='vertical')
-ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
-#color = 'tab:blue'
-#ax2.plot(time, col_2, color=color)
-#ax2.tick_params(axis='y', labelcolor=color)
 
-color = 'tab:green'
-ax2.plot(time, ma_2, color=color)
-ax2.set_ylabel('T-8220 Press (Torr)', color=color)
-#ax2.set_ylabel('E-8221A/B/C Inlet SM (kPa)', color=color)
-#ax2.set_ylabel('E-8221A/B/C Inlet SM (kPa)', color=color)
-ax2.tick_params(axis='y', labelcolor=color)
-
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.show()
 
 
 
