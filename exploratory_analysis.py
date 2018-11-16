@@ -166,28 +166,83 @@ def plot_alarm_setting_histogram(i, how_many_std = 3, df = raw_data):
 
 plot_alarm_setting_histogram(i = 2, how_many_std = 3, df = raw_data)    
 
+def get_data_for_normal_region(df, i, date1, date2):
+    ind1 = df.iloc[:,0] > date1  
+    ind2 = df.iloc[:,0] < date2 
+    ind = ind1 & ind2
+    y = raw_data.iloc[:,i][ind]
+    mean = np.mean(y)
+    std = np.std(y)
+    return mean, std
+
+date1 = '2017-06-17 00:00'
+date2 = '2017-06-23 00:00'
+i = 5
+
+mean, std = get_data_for_normal_region(raw_data, i, date1, date2)
+
+mean
+std
+
+ind = get_numeric_index(raw_data, i)
+x = raw_data.iloc[ind,0]
+y = raw_data.iloc[ind,i]
+signal = np.zeros(len(y))
+
+threshold = 10
+for i in range(len(y)):
+    if abs(y.iloc[i] - mean) > threshold*std:
+        signal[i] = 1
 
 
 
-ind = get_numeric_index(raw_data, i = 3)
-y = get_y(raw_data, ind, i = 2)
-bins, p = get_pdf(y)
-plt.plot(bins, p)
 
 
-i = 1
-ind = get_numeric_index(alarm_setting, i)
-x = get_x(alarm_setting, ind)
-y = get_y(alarm_setting, ind, i = 1)
-len(x)
-alarm_setting.shape
-freq, edges = np.histogram(y.values, bins=20)
-plt.bar(edges[:-1], freq, width=np.diff(edges), ec="k", align="edge")
+plt.plot(x,y)
+plt.plot(x, signal)
 
-for i in range(1,2):
-    print(i)
-    plot_ts(i, alarm_setting)
-    plot_hist(i, alarm_setting)
+plt.plot(x[:10000], signal[:10000])
+plt.plot(x[:10000], y[:10000])
+
+
+
+i = 5
+ind = get_numeric_index(raw_data, i)
+x = get_x(raw_data, ind)
+
+
+y = get_y(raw_data, ind, i )
+lag = 50
+threshold = 4
+influence = 0
+
+signals = np.zeros(len(y))
+filteredY = y
+avgFilter = np.zeros(len(y))
+stdFilter = np.zeros(len(y))
+avgFilter[lag] = np.mean(y[0:lag])
+stdFilter[lag] = np.std(y[0:lag])
+
+for i in range(lag+1, 5000):
+    if abs(y[i] - avgFilter[i-1]) > threshold*stdFilter[i-1]:
+        if y[i] > avgFilter[i-1]:
+            signals[i] = 1
+        else:
+            signals[i] = -1
+        filteredY[i] = influence*y[i]+(1-influence)*filteredY[i-1]
+    else:
+        signals[i] = 0
+        filteredY[i] <- y[i]
+    avgFilter[i] <- np.mean(filteredY[(i-lag):i])
+    stdFilter[i] <- np.std(filteredY[(i-lag):i])
+        
+        
+
+plt.plot(x[:5000],y[:5000])
+plt.plot(x[:5000], signals[:5000])
+
+plt.plot(y[:25000])
+
 
 max(y)
 min(y)
@@ -277,11 +332,23 @@ def plot_ts_zoomed(i, start_time, end_time, df = raw_data):
     plt.show()
 
 
-plot_ts_zoomed(6, '2017-07-01 01:00', '2017-07-01 01:05', df = raw_data)
+plot_ts_zoomed(6, '2017-06-17 00:00', '2017-06-23 00:00', df = raw_data)
 plot_ts_zoomed(3, '2017-08-04 11:10', '2017-08-04 11:30', df = raw_data)
 plot_ts_zoomed(6, '2017-08-04 11:10', '2017-08-04 11:30', df = raw_data)
 plot_ts_zoomed(5, '2017-08-04 11:10', '2017-08-04 11:30', df = raw_data)
     
+raw_data.columns[0]
+ind1 = raw_data.iloc[:,0] > '2017-06-17 00:00'  
+ind2 = raw_data.iloc[:,0] < '2017-06-23 00:00'  
+ind = ind1 & ind2
+raw_data.iloc[:,0][ind]
+raw_data.iloc[:,5][ind]
+
+y = get_y(alarm_setting, ind, i = 1)
+
+
+
+
 ###############################################################################
 # Finding Correlation
 ###############################################################################
@@ -355,13 +422,32 @@ def plot_moving_average_and_load(i , mv_period = 24, df = raw_data):
     plt.show()
     return
     
-plot_moving_average_and_load(i = 3 , mv_period = 24, df = raw_data)
+plot_moving_average_and_load(i = 3 , mv_period = 10*24, df = raw_data)
+raw_data.columns
+i = 2
+ind = get_numeric_index(raw_data, i)
+col_name = raw_data.columns[i]
+x = raw_data.iloc[ind,0]
+y = get_y(raw_data, ind, i)
 
 
 
 
 
 
+
+raw_data.columns
+i = 2
+ind = get_numeric_index(raw_data, i)
+col_name = raw_data.columns[i]
+x = raw_data.iloc[ind,0]
+y = get_y(raw_data, ind, i)
+ma_y = y.rolling(window = 10*24*60).mean()
+plt.plot(x, ma_y)
+plt.xticks(rotation = 'vertical')
+
+pct_change = ma_y.pct_change()
+plt.plot(pct_change)
 
 
 
