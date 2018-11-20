@@ -188,14 +188,28 @@ ind = get_numeric_index(raw_data, i)
 x = raw_data.iloc[ind,0]
 y = raw_data.iloc[ind,i]
 signal = np.zeros(len(y))
+signal_ind = np.zeros(len(y))
+signal_ind = np.ones(len(y), dtype=bool)
+
 
 threshold = 10
 for i in range(len(y)):
     if abs(y.iloc[i] - mean) > threshold*std:
         signal[i] = 1
+        signal_ind[i] = False
 
 
+fig, ax1 = plt.subplots()
+ax1.plot(x,y)
+ax1.get_yaxis().set_visible(False)
+ax2 = ax1.twinx()
+ax2.plot(x, signal, color = 'green')
+ax2.set_ylim(0,10)
+fig.tight_layout()  
+plt.show()
 
+
+signal
 
 
 plt.plot(x,y)
@@ -402,7 +416,8 @@ def plot_moving_average_and_load(i , mv_period = 24, df = raw_data):
     col_1 = df.iloc[valid_ind, 1]
     col_2 = df.iloc[valid_ind, i]
     ma_2 = col_2.rolling(window = mv_period*60).mean()
-    y_label = df.columns[i]
+    title = df.columns[i]
+    y_label = 'E-8221 A/B/C Inlet SM (kPa)'
     
     fig, ax1 = plt.subplots()
 
@@ -417,7 +432,7 @@ def plot_moving_average_and_load(i , mv_period = 24, df = raw_data):
     ax2.plot(time, ma_2, color=color)
     ax2.set_ylabel(y_label, color=color)
     ax2.tick_params(axis='y', labelcolor=color)
-    
+    plt.title(title)
     fig.tight_layout()  
     plt.show()
     return
