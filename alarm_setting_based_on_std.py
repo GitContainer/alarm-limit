@@ -166,7 +166,7 @@ def plot_all(i, start_time, end_time, df):
     return
 
 ###############################################################################
-# Figure out normal operating region based on visual inspection
+# Alarm Setting of Raw Data
 ###############################################################################
 def plot_data_from_raw_data(df):  
     start_time = '2017-06-01 00:00'
@@ -188,7 +188,7 @@ def plot_data_from_raw_data(df):
 plot_data_from_raw_data(df = raw_data)
     
 ###############################################################################
-# case 1
+# Alarm Setting of alarm setting data
 ###############################################################################
 def plot_data_from_alarm_setting(df):  
     start_time = '2016-08-22 00:00'
@@ -198,15 +198,67 @@ def plot_data_from_alarm_setting(df):
     return
 
 plot_data_from_alarm_setting(df = alarm_setting)
+
 ###############################################################################
-# case 2
+# Finding Minimum and maximum alarm limit setting
 ###############################################################################
+def create_empty_df():
+    col_names = ['tag','lower', 'upper', 'mean', 'std', 'start_time', 'end_time']
+    df_alarm_setting = pd.DataFrame(columns = col_names)
+    return df_alarm_setting
+
+def create_dictionary(tag, lower, upper, mean, std, start_time, end_time):
+    values = {'tag': tag,
+             'lower':lower, 
+             'upper':upper,
+             'mean':mean,
+             'std':std,
+             'start_time': start_time,
+             'end_time': end_time}
+    return values
+
+
+def add_alarm_values(df_alarm_setting, values):
+    print(df_alarm_setting)
+    df_alarm_setting = df_alarm_setting.append(values, ignore_index = True)
+    return df_alarm_setting
+    
+
+df_alarm_setting = create_empty_df()
+
+start_time = '2017-06-01 00:00'
+end_time = '2017-11-10 00:00'
+how_many_std = 3
+rc_names = raw_data.columns
+for i in range(2,5):
+    lower, upper, mean, std = get_alarm_settings(i, how_many_std, start_time, end_time, raw_data)
+    tag = rc_names[i]
+    values = create_dictionary(tag, lower, upper, mean, std, start_time, end_time)
+    df_alarm_setting = add_alarm_values(df_alarm_setting, values)
+    
+
+start_time = '2017-06-18 00:00'
+end_time = '2017-06-23 00:00'
+for i in range(5,7):
+    lower, upper, mean, std = get_alarm_settings(i, how_many_std, start_time, end_time, raw_data)
+    tag = rc_names[i]
+    values = create_dictionary(tag, lower, upper, mean, std, start_time, end_time)
+    df_alarm_setting = add_alarm_values(df_alarm_setting, values)
 
 
 
+start_time = '2016-08-22 00:00'
+end_time = '2017-01-10 00:00'
+i = 1
+lower, upper, mean, std = get_alarm_settings(i, how_many_std, start_time, end_time, alarm_setting)
+tag = alarm_setting.columns[1]
+values = create_dictionary(tag, lower, upper, mean, std, start_time, end_time)
+df_alarm_setting = add_alarm_values(df_alarm_setting, values)
 
-
-
+pd.set_option('display.max_columns', 7)
+pd.set_option('display.width', 200)
+print(df_alarm_setting.round(2))
+df_alarm_setting.to_excel('Alarm_Limit_Setting.xlsx')
 
 
 
