@@ -65,13 +65,7 @@ def plot_ts_zoomed(i, start_time, end_time, df):
     plt.tight_layout()
     plt.savefig(fname)
     plt.show()
-
-
-start_time = '2016-08-22 00:00'
-end_time = '2017-01-10 00:00'
-i = 1
-plot_ts(i, start_time, end_time, alarm_setting)
-plot_ts_zoomed(i, start_time, end_time, alarm_setting)
+    return
 
 ###############################################################################
 # Get the upper and lower limit of the alarm setting and plot it on the original 
@@ -95,7 +89,11 @@ def plot_ts_with_upper_lower_bound(i, lower, upper, df):
     col_name = df.columns[i]
     x = get_x(df, ind)
     y = get_y(df, ind, i)
-    plt.plot(x,y) 
+    youtside = np.ma.masked_inside(y, lower, upper)
+    yinside = np.ma.masked_outside(y, lower, upper)
+    plt.plot(x, youtside, 'red', label = 'Abnormal')
+    plt.plot(x,yinside, 'green', label = 'Normal')
+    plt.legend() 
     plt.axhline(y=lower, color = 'green', linestyle='--')
     plt.axhline(y=upper, color = 'green', linestyle='--')
     plt.xticks(rotation = 'vertical')
@@ -107,9 +105,6 @@ def plot_ts_with_upper_lower_bound(i, lower, upper, df):
     plt.show()
     return
 
-lower, upper, mean, std = get_alarm_settings(i, 3, start_time, end_time, alarm_setting)
-plot_ts_with_upper_lower_bound(i, lower, upper, alarm_setting)
-
 ###############################################################################
 # get the data for plotting
 ###############################################################################
@@ -120,9 +115,9 @@ def get_df_subset_based_on_date(start_time, end_time, df):
     df_subset = df.loc[ind, :]
     return df_subset
 
-def get_pdf_data(df):
-    ind_num = get_numeric_index(df, 1)
-    data = df_subset.iloc[ind_num, 1]     
+def get_pdf_data(i, df):
+    ind_num = get_numeric_index(df, i)
+    data = df.iloc[ind_num, i]     
     mean = np.mean(data)
     std = np.std(data)
     high = np.max(data)
@@ -137,13 +132,11 @@ def get_hist_data(i, df):
     freq, edges = np.histogram(y.values, bins=20)
     return freq, edges
           
-df_subset = get_df_subset_based_on_date(start_time, end_time, alarm_setting)
-bins, p = get_pdf_data(df_subset)
-freq, edges = get_hist_data(1, df_subset)
+
 ###############################################################################
 # Do the plotting
 ###############################################################################
-def plot_alarm_setting_histogram(freq, edges, bins, p, mean, lower, upper, std): 
+def plot_alarm_setting_histogram(freq, edges, bins, p, mean, lower, upper, std, title): 
     fig, ax1 = plt.subplots()
     ax1.bar(edges[:-1], freq, width=np.diff(edges), ec="k", align="edge", color = 'yellow')
     ax1.get_yaxis().set_visible(False)
@@ -155,14 +148,59 @@ def plot_alarm_setting_histogram(freq, edges, bins, p, mean, lower, upper, std):
     ax2.axvline(x = lower, color = 'red')
     ax2.axvline(x = upper, color = 'red')
     ax2.get_yaxis().set_visible(False)
-    fig.tight_layout()  
+    plt.title(title)
+    fig.tight_layout()     
     plt.show()
     return
 
-plot_alarm_setting_histogram(freq, edges, bins, p, mean, lower, upper, std)    
+def plot_all(i, start_time, end_time, df):
+    plot_ts(i, start_time, end_time, df)
+    plot_ts_zoomed(i, start_time, end_time, df)
+    lower, upper, mean, std = get_alarm_settings(i, 3, start_time, end_time, df)
+    plot_ts_with_upper_lower_bound(i, lower, upper, df)
+    df_subset = get_df_subset_based_on_date(start_time, end_time, df)
+    bins, p = get_pdf_data(i, df_subset)
+    freq, edges = get_hist_data(i, df_subset)
+    title = df.columns[i]
+    plot_alarm_setting_histogram(freq, edges, bins, p, mean, lower, upper, std, title)  
+    return
 
+###############################################################################
+# Figure out normal operating region based on visual inspection
+###############################################################################
+def plot_data_from_raw_data(df):  
+    start_time = '2017-06-01 00:00'
+    end_time = '2017-11-10 00:00'
+    for i in range(2,5):
+        plot_all(i, start_time, end_time, df)
+        
+    start_time = '2017-06-18 00:00'
+    end_time = '2017-06-23 00:00'
+    for i in range(5,7):
+        plot_all(i, start_time, end_time, df)
 
+#    start_time = '2017-05-21 00:00'
+#    end_time = '2017-05-26 00:00'
+#    for i in range(5,7):
+#        plot_all(i, start_time, end_time, df)
+    return        
 
+plot_data_from_raw_data(df = raw_data)
+    
+###############################################################################
+# case 1
+###############################################################################
+def plot_data_from_alarm_setting(df):  
+    start_time = '2016-08-22 00:00'
+    end_time = '2017-01-10 00:00'
+    i = 1
+    plot_all(i, start_time, end_time, df)
+    return
+
+plot_data_from_alarm_setting(df = alarm_setting)
+###############################################################################
+# case 2
+###############################################################################
 
 
 
