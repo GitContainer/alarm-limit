@@ -438,12 +438,23 @@ def plot_moving_average_and_load(i , mv_period = 24, df = raw_data):
     return
     
 plot_moving_average_and_load(i = 3 , mv_period = 10*24, df = raw_data)
-raw_data.columns
-i = 2
-ind = get_numeric_index(raw_data, i)
-col_name = raw_data.columns[i]
-x = raw_data.iloc[ind,0]
-y = get_y(raw_data, ind, i)
+
+def plot_moving_average(i, mv_period, df):
+    valid_ind = get_numeric_index(df, i)
+    time = get_x(df, valid_ind)
+    col_2 = df.iloc[valid_ind, i]
+    ma_2 = col_2.rolling(window = mv_period*60).mean()
+    title = df.columns[i]
+    
+    plt.plot(time, col_2)
+    plt.plot(time, ma_2, color = 'tab:green', label = 'Moving Average')
+    plt.xticks(rotation = 'vertical')
+    plt.title(title)
+    plt.legend()
+    plt.show()
+    return
+
+plot_moving_average(i = 3, mv_period = 10*24, df = raw_data)
 
 
 
@@ -451,30 +462,11 @@ y = get_y(raw_data, ind, i)
 
 
 
-raw_data.columns
-i = 2
-ind = get_numeric_index(raw_data, i)
-col_name = raw_data.columns[i]
-x = raw_data.iloc[ind,0]
-y = get_y(raw_data, ind, i)
-ma_y = y.rolling(window = 10*24*60).mean()
-plt.plot(x, ma_y)
-plt.xticks(rotation = 'vertical')
-
-pct_change = ma_y.pct_change()
-plt.plot(pct_change)
 
 
 
-pc_change = col_1.pct_change(1)
-plt.plot(pc_change*10000)
-plt.ylim([0,100])
-plt.plot(col_1)
 
-pc_change = col_2.pct_change(1)
-plt.plot(pc_change*10000)
-plt.ylim([0,250])
-plt.plot(col_2)
+
 
 ###############################################################################
 # Save to CSV
