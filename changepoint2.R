@@ -100,6 +100,52 @@ ci.nile
 plot(Nile)
 lines(ci.nile)
 
+######################################################################
+# struchange
+#####################################################################
+library("strucchange")
+data("USIncExp")
+USIncExp2 <- window(USIncExp, start = c(1985,12))
+coint.res <- residuals(lm(expenditure ~ income, data = USIncExp2))
+coint.res <- lag(ts(coint.res, start = c(1985,12), freq = 12), k = -1)
+USIncExp2 <- cbind(USIncExp2, diff(USIncExp2), coint.res)
+USIncExp2 <- window(USIncExp2, start = c(1986,1), end = c(2001,2))
+colnames(USIncExp2) <- c("income", "expenditure", "diff.income",
+                           "diff.expenditure", "coint.res")
+ecm.model <- diff.expenditure ~ coint.res + diff.income
+
+
+########################################################################
+# Moitoring with struchange
+########################################################################
+USIncExp3 <- window(USIncExp2, start = c(1986, 1), end = c(1989,12))
+me.mefp <- mefp(ecm.model, type = "ME", data = USIncExp3, alpha = 0.05)
+USIncExp3 <- window(USIncExp2, start = c(1986, 1), end = c(1990,12))
+me.mefp <- monitor(me.mefp)
+USIncExp3 <- window(USIncExp2, start = c(1986, 1))
+me.mefp <- monitor(me.mefp)
+me.mefp
+USIncExp3 <- window(USIncExp2, start = c(1986, 1), end = c(1989,12))
+me.efp <- efp(ecm.model, type = "ME", data = USIncExp3, h = 0.5)
+me.mefp <- mefp(me.efp, alpha=0.05)
+USIncExp3 <- window(USIncExp2, start = c(1986, 1))
+me.mefp <- monitor(me.mefp)
+plot(me.mefp)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
