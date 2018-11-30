@@ -261,6 +261,23 @@ print(df_alarm_setting.round(2))
 df_alarm_setting.to_excel('Alarm_Limit_Setting.xlsx')
 
 
+###############################################################################
+# Alarm setting withour gaussian assumption
+###############################################################################
+num_ind = get_numeric_index(raw_data, 4)
+data  = get_y(raw_data, num_ind, i = 4)
+data = np.array(data.values)
+data = np.array(list(data[:]), dtype=np.float)
+HPD = np.percentile(data, [2.5, 97.5])
+sns.kdeplot(data)
+plt.hist(data, density = True)
+plt.plot(HPD, [0, 0], label='HPD {:.2f} {:.2f}'.format(*HPD), 
+      linewidth=2, color='g')
+plt.axvline(x=HPD[0], color = 'g')
+plt.axvline(x=HPD[1], color = 'g')
+
+
+
 
 
 
