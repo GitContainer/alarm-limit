@@ -262,8 +262,7 @@ for i, col in enumerate(col_desc):
 
 ###############################################################################
 # Alarm limit setting using moving average
-###############################################################################
-pd.rolling_mean(plug_data, 24*60) 
+############################################################################### 
 maval = plug_data.iloc[:,1].rolling(24*60).mean() 
 plug_data.iloc[:,1].rolling(24*60)
 
@@ -288,9 +287,27 @@ valid_ind = ma_2.notna()
 time = time.loc[valid_ind]
 col_2 = col_2.loc[valid_ind]
 
-plt.hist(col_2.values)
+#plt.hist(col_2.values)
+col_2.values.reshape(1,-1)[0]
+x = np.random.normal(100, 100, size = 100)
 
 sns.distplot(col_2.values)
+sns.distplot(col_2.values.reshape(1,-1)[0])
+
+x = np.array(col_2.values, dtype='float')
+sns.distplot(x, bins = 300, color = 'red')
+plt.xlim(150, 200)
+
+###############################################################################
+# data preprocessing
+###############################################################################
+
+
+
+
+
+
+
 
 
 
