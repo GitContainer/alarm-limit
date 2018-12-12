@@ -138,19 +138,51 @@ def plot_demarcation(df, updated_locations, updated_values, margin):
 cleaned_df = remove_non_numeric_values(plug_data)
 ind = cleaned_df.iloc[:,1] > 90
 change_locations, change_values = get_change_locations(ind)
-margin = pd.Timedelta('5 days')
+margin = pd.Timedelta('10 days')
 del_index = get_index_to_be_deleted(margin, change_locations, change_values)
 updated_locations, updated_values = update_change_locations(change_locations, change_values, del_index)
 plot_demarcation(cleaned_df, updated_locations, updated_values, margin)
 
+###############################################################################
+# in this the margin is not taken care of
+###############################################################################
+ind = []
+n_df, _ = cleaned_df.shape
+n_locs = len(updated_locations)
+for i, _ in enumerate(updated_locations):
+    if i == 0:
+        if updated_values[i] == True:
+            print(updated_locations[i])
+            locs = range(0,updated_locations[i])
+            print(locs)
+            ind.append(locs)
+    elif i == (n_locs - 1):
+        if updated_values[i] == False:
+            print(updated_locations[i])
+            locs = range(updated_locations[i], n_df)
+            print(locs)
+            ind.append(locs)
+    else:
+        if updated_values[i] == False:
+            locs = range(updated_locations[i], updated_locations[i+ 1])
+            print(locs)
+            ind.append(locs)
 
+           
+for item in ind:
+    plt.plot(cleaned_df.iloc[item,0], cleaned_df.iloc[item,1], linewidth = 2)
+plt.xticks(rotation = 'vertical')
+        
+time_point = cleaned_df.iloc[203575,0] - margin 
+ind = cleaned_df.iloc[:,0] < time_point
 
-
+plt.plot(cleaned_df.iloc[:,0], cleaned_df.iloc[:,1]) 
+plt.plot(cleaned_df.loc[ind].iloc[:,0], cleaned_df.loc[ind].iloc[:,1]) 
+plt.xticks(rotation = 'vertical')    
 
 
 
 for loc, val in zip(updated_locations, updated_values):
-    if i == 0
     print(loc, val, cleaned_df.iloc[loc,0])
 
 plt.plot(cleaned_df.iloc[:200875,0], cleaned_df.iloc[:200875,1])
