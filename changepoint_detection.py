@@ -47,7 +47,7 @@ def read_plug_data():
 plug_data = read_plug_data()
 
 ###############################################################################
-# clean the data
+# clean the data (Remove the non numeric characters)
 ###############################################################################
 def remove_non_numeric_values(df):
     ind = []
@@ -60,14 +60,14 @@ def remove_non_numeric_values(df):
     
 cleaned_df = remove_non_numeric_values(plug_data)
 
-   
-    
+###############################################################################
+#  Subset the data with load above certain threshold and within a given period 
+###############################################################################    
 
 def get_index_with_more_than_specified_load(df, load):
     ind = df.iloc[:,1] > load
     return ind
     
-ind = get_index_with_more_than_specified_load(cleaned_df, 90)
 
 def get_change_locations(ind):
     change_locations = []
@@ -86,7 +86,6 @@ def get_change_locations(ind):
     return change_locations, change_values
 
 
-
 def get_index_to_be_deleted(margin, change_locations, change_values):
     del_index = []    
     n = len(change_locations)
@@ -97,7 +96,6 @@ def get_index_to_be_deleted(margin, change_locations, change_values):
             continue
         pre_ind = change_locations[i - 1]
         ind = change_locations[i]
-        next_ind = change_locations[i + 1]
         
         if change_values[i] == True:
             time_diff = cleaned_df.iloc[ind, 0] - cleaned_df.iloc[pre_ind, 0]
@@ -107,8 +105,6 @@ def get_index_to_be_deleted(margin, change_locations, change_values):
                 del_index.append(i-1)
                 del_index.append(i)
     return del_index
-
-
         
 def update_change_locations(change_locations, change_values, del_index):
     updated_locations = []
@@ -135,6 +131,7 @@ def plot_demarcation(df, updated_locations, updated_values, margin):
     plt.show()
     return
 
+ind = get_index_with_more_than_specified_load(cleaned_df, 90)
 cleaned_df = remove_non_numeric_values(plug_data)
 ind = cleaned_df.iloc[:,1] > 90
 change_locations, change_values = get_change_locations(ind)
@@ -146,48 +143,62 @@ plot_demarcation(cleaned_df, updated_locations, updated_values, margin)
 ###############################################################################
 # in this the margin is not taken care of
 ###############################################################################
-ind = []
-n_df, _ = cleaned_df.shape
-n_locs = len(updated_locations)
-for i, _ in enumerate(updated_locations):
-    if i == 0:
-        if updated_values[i] == True:
-            print(updated_locations[i])
-            locs = range(0,updated_locations[i])
-            print(locs)
-            ind.append(locs)
-    elif i == (n_locs - 1):
-        if updated_values[i] == False:
-            print(updated_locations[i])
-            locs = range(updated_locations[i], n_df)
-            print(locs)
-            ind.append(locs)
-    else:
-        if updated_values[i] == False:
-            locs = range(updated_locations[i], updated_locations[i+ 1])
-            print(locs)
-            ind.append(locs)
+def get_change_time_with_margin(updated_locations, updated_values, margin):
+    change_time_with_margin = []
+    for loc, status in zip(updated_locations, updated_values):
+        if status == True:
+            time = cleaned_df.iloc[loc,0] - margin
+        else:
+            time = cleaned_df.iloc[loc,0] + margin
+        change_time_with_margin.append(time)
+    return change_time_with_margin
+    
+
+def get_indices_for_each_region(change_time_with_margin, updated_values, df):
+    indices_to_keep = []
+        
+    n = len(change_time_with_margin)
+    
+    for i, time in enumerate(change_time_with_margin):
+        status = updated_values[i]
+        if i == 0:
+            if status == True:
+                ind = df.iloc[:,0]  < time
+                indices_to_keep.append(ind)
+                
+        if i == n-1:
+            if status == False:
+                ind = df.iloc[:,0]  > time
+                indices_to_keep.append(ind)
+            break
+        
+        if status == False:
+            next_time = change_time_with_margin[i+1] 
+            ind1 = df.iloc[:,0]  > time
+            ind2 = df.iloc[:,0]  < next_time
+            ind = ind1 & ind2
+            indices_to_keep.append(ind)
+    return indices_to_keep
+
+def plot_all_regions(df, indices_to_keep, change_time_with_margin):
+    plt.plot(df.iloc[:,0], df.iloc[:,1], color = 'red') 
+    for ind in indices_to_keep:
+        plt.plot(df.loc[ind].iloc[:,0], df.loc[ind].iloc[:,1], linewidth = 2,
+                 color = 'green')
+    for time in change_time_with_margin:
+        plt.axvline(x = time, color = 'red',
+                            linestyle = '--', linewidth = 0.5)
+    plt.xticks(rotation = 'vertical')
+    return
+
+
+change_time_with_margin = get_change_time_with_margin(updated_locations, updated_values, margin)
+indices_to_keep = get_indices_for_each_region(change_time_with_margin, updated_values, cleaned_df)
+plot_all_regions(cleaned_df, indices_to_keep, change_time_with_margin)
+        
+        
 
            
-for item in ind:
-    plt.plot(cleaned_df.iloc[item,0], cleaned_df.iloc[item,1], linewidth = 2)
-plt.xticks(rotation = 'vertical')
-        
-time_point = cleaned_df.iloc[203575,0] - margin 
-ind = cleaned_df.iloc[:,0] < time_point
-
-plt.plot(cleaned_df.iloc[:,0], cleaned_df.iloc[:,1]) 
-plt.plot(cleaned_df.loc[ind].iloc[:,0], cleaned_df.loc[ind].iloc[:,1]) 
-plt.xticks(rotation = 'vertical')    
-
-
-
-for loc, val in zip(updated_locations, updated_values):
-    print(loc, val, cleaned_df.iloc[loc,0])
-
-plt.plot(cleaned_df.iloc[:200875,0], cleaned_df.iloc[:200875,1])
-plt.plot(cleaned_df.iloc[203575:241924,0], cleaned_df.iloc[203575:241924,1])
-
 
 
 
