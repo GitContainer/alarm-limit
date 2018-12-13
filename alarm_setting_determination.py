@@ -13,21 +13,6 @@ import numpy as np
 # 1. cleaned_df
 # 2. indices_to_keep
 ###############################################################################
-cleaned_df.head()
-indices_to_keep
-
-i = 3  # desired tag
-tag_name = cleaned_df.columns[i]
-load_tag = cleaned_df.columns[1]
-all_time = cleaned_df.iloc[:,0].values
-all_tag_values = cleaned_df[tag_name].values
-all_load_values = cleaned_df[load_tag].values
-
-data1 = all_time
-data2 = all_tag_values
-data3 = all_load_values
-
-
 def plot1(ax, data1, data2, data3, ind):
     ax.plot(data1, data2, color = 'gray')
     for tick in ax.get_xticklabels():
@@ -63,11 +48,32 @@ def plot3(ax, data, ind):
 #    ax.set_xlim(160, 190)
     return 
 
-for ind in indices_to_keep:   
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
-    plot1(ax1, data1, data2, data3, ind)
-    plot2(ax2, data1, data2, data3, ind)
-    plot3(ax3, data2, ind)
-    fig.tight_layout()
+
+def get_data(df, i):
+    tag_name = df.columns[i]
+    load_tag = df.columns[1]
+    all_time = df.iloc[:,0].values
+    all_tag_values = df[tag_name].values
+    all_load_values = df[load_tag].values
+    return all_time, all_tag_values, all_load_values 
 
 
+
+def create_plot_for_all_regions(data1, data2, data3, indices_to_keep):
+    for ind in indices_to_keep:   
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+        plot1(ax1, data1, data2, data3, ind)
+        plot2(ax2, data1, data2, data3, ind)
+        plot3(ax3, data2, ind)
+        fig.tight_layout()
+    return
+
+def plot_tags_and_subregions(columns, cleaned_df, indices_to_keep):
+    for col in columns:
+        data1, data2, data3 = get_data(cleaned_df, col)
+        create_plot_for_all_regions(data1, data2, data3, indices_to_keep)
+    return
+
+plot_tags_and_subregions([2,3], cleaned_df, indices_to_keep)
+        
+        
