@@ -131,9 +131,8 @@ def plot_demarcation(df, updated_locations, updated_values, margin):
     plt.show()
     return
 
-ind = get_index_with_more_than_specified_load(cleaned_df, 90)
 cleaned_df = remove_non_numeric_values(plug_data)
-ind = cleaned_df.iloc[:,1] > 90
+ind = get_index_with_more_than_specified_load(cleaned_df, 90)
 change_locations, change_values = get_change_locations(ind)
 margin = pd.Timedelta('10 days')
 del_index = get_index_to_be_deleted(margin, change_locations, change_values)
@@ -197,134 +196,6 @@ indices_to_keep = get_indices_for_each_region(change_time_with_margin, updated_v
 plot_all_regions(cleaned_df, indices_to_keep, change_time_with_margin)
         
         
-
-           
-
-
-
-
-
-
-###############################################################################
-# plotting the cleaned data
-###############################################################################
-plt.plot(cleaned_df.iloc[:,0], cleaned_df.iloc[:,1])
-plt.xticks(rotation = 'vertical')
-
-
-ind = cleaned_df.iloc[:,1] > 90
-df = cleaned_df.loc[ind, :]
-plt.plot(cleaned_df.iloc[:,0], cleaned_df.iloc[:,1])
-plt.plot(df.loc[ind,:].iloc[:,0], df.loc[ind,:].iloc[:,1])
-plt.xticks(rotation = 'vertical')
-
-
-start_time = '2017-01-09 11:27:00'
-end_time = '2017-01-09 12:57:00'
-
-ind1 = cleaned_df.iloc[:,0] > start_time
-ind2 = cleaned_df.iloc[:,0] < end_time
-ind_time = ind1 & ind2
-
-df = cleaned_df.loc[ind_time, :]
-plt.plot(df.iloc[:,0], df.iloc[:,1])
-plt.xticks(rotation = 'vertical')
-
-
-time_ind = ind == False
-change_locations = []
-change_values = []
-indices = time_ind.index
-values = time_ind.values
-n = len(indices)
-
-for i, val in enumerate(values):
-    if i == n-1:
-        break
-    if val != values[i+1]:
-        print(i, indices[i], val, values[i+1])
-        change_locations.append(indices[i])
-        change_values.append(val)
-
-
-margin = pd.Timedelta('1 days')
-start_time = '2017-11-24 11:27:00'
-end_time = '2017-12-05 12:57:00'
-    
-plt.plot(cleaned_df.iloc[:,0], cleaned_df.iloc[:,1])
-for xc, val in zip(change_locations, change_values):
-    if val == True:
-        plt.axvline(x = cleaned_df.iloc[xc,0] + margin, color = 'green',
-                    linestyle = '--', linewidth = 0.5)
-    elif val == False:
-        plt.axvline(x = cleaned_df.iloc[xc,0] - margin, color = 'red', 
-                    linestyle = '--', linewidth = 0.5)
-plt.xticks(rotation = 'vertical')
-plt.ylim(70,120)
-plt.xlim(start_time, end_time)
-
-
-
-
-for xc, val in zip(change_locations, change_values):
-    print(cleaned_df.iloc[xc,0], val)
-
-
-del_index = []
-
-margin = pd.Timedelta('1 days')    
-n = len(change_locations)
-for i, xc in enumerate(change_locations):
-    if i == n-1:
-        break
-    if i == 0:
-        continue
-    pre_ind = change_locations[i - 1]
-    ind = change_locations[i]
-    next_ind = change_locations[i + 1]
-    
-    if change_values[i] == False:
-        time_diff = cleaned_df.iloc[ind, 0] - cleaned_df.iloc[pre_ind, 0]
-        print(i, i-1, time_diff)
-        print(i, cleaned_df.iloc[pre_ind,0], cleaned_df.iloc[ind, 0], change_values[i])
-        if time_diff < margin:
-            del_index.append(i-1)
-            del_index.append(i)
-#    if change_values[i] == True:
-#        time_diff = cleaned_df.iloc[next_ind, 0] - cleaned_df.iloc[ind, 0]
-#        print(i, i+1, time_diff)
-#        print(i, cleaned_df.iloc[ind,0], cleaned_df.iloc[next_ind, 0], change_values[i])
-#        if time_diff < margin:
-#            del_index.append(i)
-#            del_index.append(i+1)
-        
-updated_change_locations = []
-updated_change_values = []
-for i, xc in enumerate(change_locations):
-    if i in del_index:
-        continue
-    updated_change_locations.append(change_locations[i])
-    updated_change_values.append(change_values[i])
-
-    
-    
-        
-margin = pd.Timedelta('1 days')
-start_time = '2017-11-24 11:27:00'
-end_time = '2017-12-05 12:57:00'
-    
-plt.plot(cleaned_df.iloc[:,0], cleaned_df.iloc[:,1])
-for xc, val in zip(updated_change_locations, updated_change_values):
-    if val == True:
-        plt.axvline(x = cleaned_df.iloc[xc,0] + margin, color = 'green',
-                    linestyle = '--', linewidth = 0.5)
-    elif val == False:
-        plt.axvline(x = cleaned_df.iloc[xc,0] - margin, color = 'red', 
-                    linestyle = '--', linewidth = 0.5)
-plt.xticks(rotation = 'vertical')
-plt.ylim(70, 120)
-plt.xlim(start_time, end_time) 
-
 ###############################################################################
 # percentage change not working
 ###############################################################################
