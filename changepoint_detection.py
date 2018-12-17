@@ -191,11 +191,47 @@ def plot_all_regions(df, indices_to_keep, change_time_with_margin):
     return
 
 
+def show_accepted_and_rejected_regions_after_data_cleaning(df, indices_to_keep, change_time_with_margin):
+    fig, ax1 = plt.subplots()
+    ax1.set_ylabel('Extraction Current Load', color='blue')
+    ax1.plot(df.iloc[:,0], df.iloc[:,1], color='red')
+    ax1.tick_params(axis='y', labelcolor='blue')
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation='vertical')
+    for ind in indices_to_keep:
+        ax1.plot(df.loc[ind].iloc[:,0], df.loc[ind].iloc[:,1], linewidth = 2,
+                 color = 'blue')
+    for time in change_time_with_margin:
+        ax1.axvline(x = time, color = 'red',
+                            linestyle = '--', linewidth = 0.5)
+    ax1.set_ylim(0,200)
+    plt.xticks(rotation = 'vertical')
+    
+    
+    ax2 = ax1.twinx()  
+        
+    y_label = df.columns[4]
+    ax2.plot(df.iloc[:,0], df.iloc[:,4], color='red')
+    ax2.set_ylabel(y_label, color='green')
+    ax2.tick_params(axis='y', labelcolor='green')
+    for ind in indices_to_keep:
+        ax2.plot(df.loc[ind].iloc[:,0], df.loc[ind].iloc[:,4], linewidth = 2,
+                 color = 'green')
+    fig.tight_layout()     
+    return
+
+show_accepted_and_rejected_regions_after_data_cleaning(cleaned_df, indices_to_keep, change_time_with_margin)
+
+
 change_time_with_margin = get_change_time_with_margin(updated_locations, updated_values, margin)
 indices_to_keep = get_indices_for_each_region(change_time_with_margin, updated_values, cleaned_df)
 plot_all_regions(cleaned_df, indices_to_keep, change_time_with_margin)
-        
-        
+ 
+
+# check the column names
+for i, col in enumerate(cleaned_df):
+    print(i, col)
+ 
+cleaned_df.columns[4]             
 ###############################################################################
 # percentage change not working
 ###############################################################################
