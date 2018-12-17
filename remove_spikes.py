@@ -35,9 +35,7 @@ def plotting_clean_values(i, df, ind):
 def plotting_mv_clean_values(i, df):
     title = df.columns[i]
     x = df.iloc[:,0]
-    y = df.iloc[:,i]
-    np.mean(y)
-    np.std(y)
+    y = df.iloc[:,i].copy(deep = True)
     y1 = (y - np.mean(y))/np.std(y)
     ma_1 = y1.rolling(window = 5*24*60).mean()
     plt.plot(x, y1, '--b')
@@ -46,13 +44,12 @@ def plotting_mv_clean_values(i, df):
     plt.xticks(rotation = 'vertical')
     plt.show()
     return
-
         
 def plot_all_mv(df):
     x = df.iloc[:,0]    
     for i in [3,10, 8]:
         label = df.columns[i]     
-        y = df.iloc[:,i]
+        y = df.iloc[:,i].copy(deep = True)
         y1 = (y - np.mean(y))/np.std(y)
         ma_1 = y1.rolling(window = 5*24*60).mean()
         plt.plot(x, ma_1, label = label)
@@ -62,26 +59,9 @@ def plot_all_mv(df):
     plt.show()
     return
 
-ind = get_index_in_single_array(indices_to_keep)
-plotting_clean_values(2, cleaned_df, ind)
-plt.plot(cleaned_df.iloc[:,2])
-for i in range(1,13):
-    plotting_clean_values(i, cleaned_df, ind)
-plotting_mv_clean_values(4, cleaned_df)
-
-for i in range(1,13):
-    plotting_mv_clean_values(i, cleaned_df)
-
-plot_all_mv(cleaned_df)
-
-    
-###############################################################################
-# plot histogram showing alarm limits
-###############################################################################
 def plot_histogram_with_alarm_limits(i, df):
-    y = df.iloc[:,i].values.copy()
+    y = df.iloc[ind,i].values.copy()
     y = np.array(y, dtype='float')
-    y = y[~np.isnan(y)]
     mean = np.mean(y)
     sd = np.std(y)
     sns.distplot(y, bins = 30, color = 'green')
@@ -92,7 +72,8 @@ def plot_histogram_with_alarm_limits(i, df):
     plt.show()
     return mean, sd
 
-mean, sd = plot_histogram_with_alarm_limits(i = 4, df = cleaned_df)
+
+
     
 def plot_alarm_limit_on_ts(i, df, mean, sd):
     x = df.iloc[:,0]
@@ -117,7 +98,17 @@ def plot_alarm_limit_on_ts(i, df, mean, sd):
     plt.show()
     return
     
+
+ind = get_index_in_single_array(indices_to_keep)
+plotting_clean_values(2, cleaned_df, ind)
+plotting_mv_clean_values(4, cleaned_df)
+plot_all_mv(cleaned_df)
+mean, sd = plot_histogram_with_alarm_limits(i = 4, df = cleaned_df)
 plot_alarm_limit_on_ts(4, cleaned_df, mean, sd)
+    
+###############################################################################
+# plot histogram showing alarm limits
+###############################################################################
 
 
 
