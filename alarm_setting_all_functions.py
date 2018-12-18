@@ -194,7 +194,7 @@ def get_updated_change_dict(change_dict, del_dict):
         updated_change_dict[key]['change_values'] = updated_values
     return updated_change_dict
 
-def plot_demarcation(df, updated_locations, updated_values, margin):
+def plot_demarcation(df, updated_change_dict, margin):
     for i in range(3):
         plt.plot(df.loc[i].iloc[:,0], df.loc[i].iloc[:,1], color = 'blue')
         updated_locations = updated_change_dict[i]['change_locations']
@@ -210,14 +210,172 @@ def plot_demarcation(df, updated_locations, updated_values, margin):
     plt.show() 
     return
 
-
-
-
 ind = get_index_with_more_than_specified_load(cleaned_df, 90)    
 change_dict = get_change_dictionary(ind)
 margin = pd.Timedelta('10 days')
 del_dict = get_del_dictionary(change_dict, margin, cleaned_df)
 updated_change_dict = get_updated_change_dict(change_dict, del_dict)
+plot_demarcation(cleaned_df, updated_change_dict, margin)
+###############################################################################
+# change indices
+###############################################################################
+def get_change_time_with_margin(updated_locations, updated_values, margin, df):
+    change_time_with_margin = []
+    for loc, status in zip(updated_locations, updated_values):
+        if status == True:
+            time = df.iloc[loc,0] - margin
+        else:
+            time = df.iloc[loc,0] + margin
+        change_time_with_margin.append(time)
+    return change_time_with_margin
+
+
+def get_updated_change_time_dict(updated_change_dict):
+    updated_change_time_dict = {}
+    for key in updated_change_dict.keys():
+        updated_locations = updated_change_dict[key]['change_locations']
+        updated_values = updated_change_dict[key]['change_values']
+        updated_change_time = get_change_time_with_margin(updated_locations, updated_values, margin, cleaned_df.loc[key])
+        updated_change_time_dict[key] = updated_change_time
+    return updated_change_time_dict
+
+
+def get_indices_for_each_region(change_time_with_margin, updated_values, df):
+    indices_to_keep = []
+        
+    n = len(change_time_with_margin)
+    
+    for i, time in enumerate(change_time_with_margin):
+        status = updated_values[i]
+        if i == 0:
+            if status == True:
+                ind = df.iloc[:,0]  < time
+                indices_to_keep.append(ind)
+                
+        if i == n-1:
+            if status == False:
+                ind = df.iloc[:,0]  > time
+                indices_to_keep.append(ind)
+            break
+        
+        if status == False:
+            next_time = change_time_with_margin[i+1] 
+            ind1 = df.iloc[:,0]  > time
+            ind2 = df.iloc[:,0]  < next_time
+            ind = ind1 & ind2
+            indices_to_keep.append(ind)
+    return indices_to_keep
+
+def get_indices_dict(updated_change_time_dict, updated_change_dict, df):
+    updated_change_time_dict = get_updated_change_time_dict(updated_change_dict)
+    indices_dict = {}
+    for key in updated_change_time_dict.keys():
+        change_time_with_margin = updated_change_time_dict[key]
+        updated_values = updated_change_dict[key]['change_values']
+        df_key = df.loc[key]
+        indices_dict[key] = get_indices_for_each_region(change_time_with_margin, updated_values, df_key)
+    return indices_dict
+    
+indices_dict =  get_indices_dict(updated_change_time_dict, updated_change_dict, cleaned_df)   
+
+###############################################################################
+# 
+###############################################################################
+def get_index_in_single_array(indices_to_keep):
+    n = len(indices_to_keep[0])
+    ind = np.zeros(n, dtype=bool)
+    for int_ind in indices_to_keep:
+        for i, val in enumerate(int_ind):
+            if val == True:
+                ind[i] = True
+    return ind
+
+def get_single_array_indices_dict(indices_dict):   
+    single_array_indices_dict = {}    
+    for key in indices_dict.keys():
+        single_array_indices_dict[key] = get_index_in_single_array(indices_dict[key])
+    return single_array_indices_dict 
+
+single_array_indices_dict = get_single_array_indices_dict(indices_dict)
+    
+    
+
+def plotting_clean_values(i, df, single_array_indices_dict):
+    for key in single_array_indices_dict.keys():
+        ind = single_array_indices_dict[key]
+        x = df.loc[key].iloc[:,0]
+        y = df.loc[key].iloc[:,i].copy(deep = True)
+        inv_ind = np.invert(ind)
+        y[inv_ind] = None
+        plt.plot(x, y, '--g')
+    plt.xticks(rotation = 'vertical')
+    plt.show()
+    return
+    
+plotting_clean_values(4, cleaned_df, single_array_indices_dict)
+
+
+def plot_histogram_with_alarm_limits(i, df, single_array_indices_dict):
+    y = []
+    for key in single_array_indices_dict.keys():
+        ind = single_array_indices_dict[key]
+        y_int = df.loc[key].iloc[ind,i].values.copy()
+        y_int = np.array(y_int, dtype='float') 
+        y.extend(y_int)
+    y =  np.array(y) 
+    y.flatten()  
+    mean = np.mean(y)
+    sd = np.std(y)
+    sns.distplot(y, bins = 30, color = 'green')
+    plt.axvline(x = mean, color = 'k')
+    plt.axvline(x = mean + 3*sd, color = 'red')
+    plt.axvline(x = mean - 3*sd, color = 'red')
+    plt.xlabel(df.columns[i])
+    plt.show()
+    return mean, sd
+
+mean, sd = plot_histogram_with_alarm_limits(4, cleaned_df, single_array_indices_dict)
+
+
+    
+def plot_alarm_limit_on_ts(i, df, mean, sd):
+    x = df.iloc[:,0]
+    y = df.iloc[:,i].copy(deep=True)
+    y = np.array(y, dtype='float')
+    
+    lower = mean - 3*sd
+    upper = mean + 3*sd
+    
+    youtside = np.ma.masked_inside(y, lower, upper)
+    yinside = np.ma.masked_outside(y, lower, upper)
+    plt.plot(x, youtside, 'red', label = 'Abnormal')
+    plt.plot(x, yinside, 'green', label = 'Normal')
+     
+    plt.axhline(y=lower, color = 'green', linestyle='--')
+    plt.axhline(y=mean, color = 'k', linestyle='--')
+    plt.axhline(y=upper, color = 'green', linestyle='--')
+    plt.xticks(rotation = 'vertical')
+    plt.ylim(mean - 20*sd, mean + 20*sd)
+    plt.title(df.columns[i])  
+    plt.legend()
+    plt.show()
+    return
+    
+plot_alarm_limit_on_ts(4, cleaned_df, mean, sd)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
