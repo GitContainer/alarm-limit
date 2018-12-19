@@ -34,16 +34,6 @@ plug_data_0 = read_plug_data(0)
 plug_data_1 = read_plug_data(1)
 plug_data_2 = read_plug_data(2)
 
-
-
-###############################################################################
-# merge the three data frames
-###############################################################################
-frames = [plug_data_0, plug_data_1, plug_data_2]
-plug_data = pd.concat(frames)
-###############################################################################
-
-
 ###############################################################################
 # clean the data (Remove the non numeric characters)
 ###############################################################################
@@ -71,7 +61,7 @@ cleaned_df_1.columns
 cleaned_df_2.columns
 
 ###############################################################################
-# merge the three data frames
+# merge the three cleaned data frames
 ###############################################################################
 frames = [cleaned_df_2, cleaned_df_0, cleaned_df_1]
 cleaned_df = pd.concat(frames, keys=[0,1,2])
@@ -107,38 +97,99 @@ def plot_ts(i, df, desc):
     plt.show()
     return
 
-plot_ts(4, cleaned_df, col_desc)
+plot_ts(1, cleaned_df, col_desc)
 
 
 ###############################################################################
-def get_index_with_more_than_specified_load(df, load):
+def get_change_point_location(df, load):
     ind = df.iloc[:,1] > load
-    return ind
-
-def get_change_locations(ind):
-    change_locations = []
-    change_values = []
-    indices = ind.index
-    values = ind.values
-    n = len(indices)
+    ind_int = ind*1
+    change_point = ind_int.diff()
+    change_ind = abs(change_point) == 1
+    return change_point.loc[change_ind]
     
-    for i, val in enumerate(values):
-        if i == n-1:
-            break
-        if val != values[i+1]:
-            print(i, indices[i], val, values[i+1])
-            change_locations.append(indices[i])
-            change_values.append(val)
-    return change_locations, change_values
+def plot_ts_with_change_point(i, df, desc, change_point):
+    col_name = df.columns[i]
+    for j in range(3):
+        ind = change_point[j].index
+        x_change = df.loc[j].loc[ind].iloc[:,0]
+        x = cleaned_df.loc[j].iloc[:,0]
+        y = cleaned_df.loc[j].iloc[:,i]
+        plt.plot(x, y, color = 'blue') 
+        for t, ct in zip(x_change, change_point[j]):
+            if ct == 1:
+                col = 'red'
+            if ct == -1:
+                col = 'green'
+            plt.axvline(x = t, color = col, linewidth = 0.4)
+    plt.xticks(rotation = 'vertical')
+    plt.title(col_name + ' : ' + desc[i-1])    
+    fname = 'results\\figures\\SMM' + col_name.replace('.', '') + '_ts' + '.jpeg'
+#    plt.xlabel('Date (YYYY-MM)')
+    plt.tight_layout()
+    plt.savefig(fname)
+    plt.show()
+    return
 
-def get_change_dictionary(ind):    
-    change_dict = {}
-    for i in range(3):
-        change_locations, change_values = get_change_locations(ind[i])
-        change_dict[i] = {}
-        change_dict[i]['change_locations'] = change_locations
-        change_dict[i]['change_values'] = change_values
-    return change_dict
+change_point_series = get_change_point_location(cleaned_df, 90)
+plot_ts_with_change_point(1, cleaned_df, col_desc, change_point_series)
+
+def get_index_to_delete(change_point, margin):
+    ind_to_delete = []
+    for j in range(3):
+        for i, change_type in enumerate(change_point[j]):
+        #    print(i, change_type)
+            if change_type == 1:
+                current_ind = change_point[j].index[i]
+                current_time = df.loc[j].loc[current_ind].iloc[0]
+                try:
+                    next_ind = change_point[j].index[i + 1]
+                except:
+                    pass
+                else:
+                    next_time = df.loc[j].loc[next_ind].iloc[0]
+                    diff = next_time - current_time
+                    print(diff)
+                    if diff < margin:
+                        print('yes')
+                        ind_to_delete.append((j, current_ind))
+                        ind_to_delete.append((j, next_ind))
+    return np.array(ind_to_delete)
+
+def get_merged_change_point(change_point, ind_to_delete):
+    merged_index = []
+    for j in range(3):
+        ind = ind_to_delete[:,0] == j
+        merged_index.append(change_point_series[j].drop(index = ind_to_delete[ind,1]))
+    
+    merged_change_point = pd.concat(merged_index, keys = range(3))
+    return merged_change_point 
+
+
+margin = pd.Timedelta('10 days')                
+ind_to_delete = get_index_to_delete(change_point_series, margin)
+merged_change_point = get_merged_change_point(change_point_series, ind_to_delete)   
+plot_ts_with_change_point(1, cleaned_df, col_desc, merged_change_point)
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    
+        
+        
+            
+
+
     
 def get_index_to_be_deleted(margin, change_locations, change_values, df):
     '''if there are changes within that margin then those change locations are removed '''
