@@ -171,102 +171,55 @@ ind_to_delete = get_index_to_delete(change_point_series, margin)
 merged_change_point = get_merged_change_point(change_point_series, ind_to_delete)   
 plot_ts_with_change_point(1, cleaned_df, col_desc, merged_change_point)
 
-    
+
+
+for item in merged_change_point:
+    print(item)    
+
+
+ind_list = []
+ 
 
 
 
 
 
-
-
-
-
-
-
-
-    
+j = 0
+start_date = cleaned_df.loc[j].iloc[0,0]
+end_date = cleaned_df.loc[j].iloc[-1,0]
+n, _ = cleaned_df.loc[j].shape
+ind = np.zeros(n, dtype = bool)
+for i, item in enumerate(merged_change_point[j]):
+    if item == 1:
+        st_ind = merged_change_point[j].index[i]
+        start_date = cleaned_df.loc[j].iloc[st_ind,0]
+        try:
+            en_ind = merged_change_point[j].index[i+1]
+        except:
+            end_date = cleaned_df.loc[j].iloc[-1,0]
+        else:
+            end_date = cleaned_df.loc[j].iloc[en_ind,0]
+        ind1 = cleaned_df.loc[j].iloc[:,0]  > start_date
+        ind2 = cleaned_df.loc[j].iloc[:,0]  < end_date
+        c_ind = ind1 & ind2
+        ind = ind | c_ind
         
+x = cleaned_df.loc[0].loc[ind,:].iloc[:,0]  
+y = cleaned_df.loc[0].loc[ind,:].iloc[:,2]  
+plt.plot(x,y)
+plt.xticks(rotation = 'vertical')    
         
-            
 
+x = cleaned_df.loc[0].iloc[:,0] 
+y = cleaned_df.loc[0].iloc[:,2].copy(deep = True)
+inv_ind = np.invert(ind)
+y[inv_ind] = None
+plt.plot(x,y)
+plt.xticks(rotation = 'vertical')   
 
-    
-def get_index_to_be_deleted(margin, change_locations, change_values, df):
-    '''if there are changes within that margin then those change locations are removed '''
-    del_index = []    
-    n = len(change_locations)
-    for i, xc in enumerate(change_locations):
-        if i == n-1:
-            break
-        if i == 0:
-            continue
-        pre_ind = change_locations[i - 1]
-        ind = change_locations[i]
         
-        if change_values[i] == True:
-            time_diff = df.iloc[ind, 0] - df.iloc[pre_ind, 0]
-            print(i, i-1, time_diff)
-            print(i, df.iloc[pre_ind,0], df.iloc[ind, 0], change_values[i])
-            if time_diff < margin:
-                del_index.append(i-1)
-                del_index.append(i)
-    return del_index
 
-def get_del_dictionary(change_dict, margin, df):
-    del_dict = {}
-    for key in change_dict.keys():    
-        change_locations = change_dict[key]['change_locations']
-        change_values = change_dict[key]['change_values']
-        df_i = df.loc[key]
-        del_index = get_index_to_be_deleted(margin, change_locations, change_values, df_i)
-        del_dict[key] = del_index
-    return del_dict
 
-def update_change_locations(change_locations, change_values, del_index):
-    updated_locations = []
-    updated_values = []
-    
-    for i, xc in enumerate(change_locations):
-        if i in del_index:
-            continue
-        updated_locations.append(change_locations[i])
-        updated_values.append(change_values[i])
-    return updated_locations, updated_values
-
-def get_updated_change_dict(change_dict, del_dict):
-    updated_change_dict = {}
-    for key in change_dict.keys():
-        change_locations = change_dict[key]['change_locations']
-        change_values = change_dict[key]['change_values']
-        del_index = del_dict[key]
-        updated_locations, updated_values = update_change_locations(change_locations, change_values, del_index)
-        updated_change_dict[key] = {}
-        updated_change_dict[key]['change_locations'] = updated_locations
-        updated_change_dict[key]['change_values'] = updated_values
-    return updated_change_dict
-
-def plot_demarcation(df, updated_change_dict, margin):
-    for i in range(3):
-        plt.plot(df.loc[i].iloc[:,0], df.loc[i].iloc[:,1], color = 'blue')
-        updated_locations = updated_change_dict[i]['change_locations']
-        updated_values = updated_change_dict[i]['change_values']
-        for xc, val in zip(updated_locations, updated_values):
-            if val == True:
-                plt.axvline(x = df.loc[i].iloc[xc,0] - margin, color = 'red',
-                            linestyle = '--', linewidth = 0.5)
-            elif val == False:
-                plt.axvline(x = df.loc[i].iloc[xc,0] + margin, color = 'green', 
-                            linestyle = '--', linewidth = 0.5)
-    plt.xticks(rotation = 'vertical')  
-    plt.show() 
-    return
-
-ind = get_index_with_more_than_specified_load(cleaned_df, 90)    
-change_dict = get_change_dictionary(ind)
-margin = pd.Timedelta('10 days')
-del_dict = get_del_dictionary(change_dict, margin, cleaned_df)
-updated_change_dict = get_updated_change_dict(change_dict, del_dict)
-plot_demarcation(cleaned_df, updated_change_dict, margin)
 ###############################################################################
 # change indices
 ###############################################################################
@@ -291,65 +244,8 @@ def get_updated_change_time_dict(updated_change_dict):
     return updated_change_time_dict
 
 
-def get_indices_for_each_region(change_time_with_margin, updated_values, df):
-    indices_to_keep = []
-        
-    n = len(change_time_with_margin)
-    
-    for i, time in enumerate(change_time_with_margin):
-        status = updated_values[i]
-        if i == 0:
-            if status == True:
-                ind = df.iloc[:,0]  < time
-                indices_to_keep.append(ind)
-                
-        if i == n-1:
-            if status == False:
-                ind = df.iloc[:,0]  > time
-                indices_to_keep.append(ind)
-            break
-        
-        if status == False:
-            next_time = change_time_with_margin[i+1] 
-            ind1 = df.iloc[:,0]  > time
-            ind2 = df.iloc[:,0]  < next_time
-            ind = ind1 & ind2
-            indices_to_keep.append(ind)
-    return indices_to_keep
 
-def get_indices_dict(updated_change_time_dict, updated_change_dict, df):
-    updated_change_time_dict = get_updated_change_time_dict(updated_change_dict)
-    indices_dict = {}
-    for key in updated_change_time_dict.keys():
-        change_time_with_margin = updated_change_time_dict[key]
-        updated_values = updated_change_dict[key]['change_values']
-        df_key = df.loc[key]
-        indices_dict[key] = get_indices_for_each_region(change_time_with_margin, updated_values, df_key)
-    return indices_dict
-    
-indices_dict =  get_indices_dict(updated_change_time_dict, updated_change_dict, cleaned_df)   
-
-###############################################################################
-# 
-###############################################################################
-def get_index_in_single_array(indices_to_keep):
-    n = len(indices_to_keep[0])
-    ind = np.zeros(n, dtype=bool)
-    for int_ind in indices_to_keep:
-        for i, val in enumerate(int_ind):
-            if val == True:
-                ind[i] = True
-    return ind
-
-def get_single_array_indices_dict(indices_dict):   
-    single_array_indices_dict = {}    
-    for key in indices_dict.keys():
-        single_array_indices_dict[key] = get_index_in_single_array(indices_dict[key])
-    return single_array_indices_dict 
-
-single_array_indices_dict = get_single_array_indices_dict(indices_dict)
-    
-    
+  
 
 def plotting_clean_values(i, df, single_array_indices_dict):
     for key in single_array_indices_dict.keys():
