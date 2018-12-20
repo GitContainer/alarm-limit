@@ -266,3 +266,31 @@ for i in range(2,13):
     mean, sd = plot_histogram_with_alarm_limits(i, merged_indices, cleaned_df)    
     plot_alarm_limit_on_ts(i, cleaned_df, mean, sd)
     plot_ts(i, cleaned_df, col_desc)
+
+
+###############################################################################
+# moving average
+###############################################################################
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
+i = 3
+for j in range(3):
+    x = cleaned_df.loc[j].iloc[:,0]
+    y = cleaned_df.loc[j].iloc[:,i].copy(deep=True)
+    y = np.array(y, dtype='float')
+    y_mv = moving_average(y, n=5*24*60)
+    plt.plot(x,y, color = 'blue')
+    plt.plot(x[5*24*60-1:],y_mv, color = 'red')
+plt.xticks(rotation = 'vertical')
+
+
+
+
+
+
+
+
+
