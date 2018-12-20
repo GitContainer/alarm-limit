@@ -369,4 +369,39 @@ for i in range(1,13):
     plot_moving_average(i, cleaned_abnormal_df, window_size = 5*24*60)
     
 
+###############################################################################
+# calculation for alarm setting
+###############################################################################
+def read_alarm_setting_file_old():    
+    fname = 'data\\IOT\\shared on 13.12.18\\Alarm Settings HH PH PL LL.xlsx'
+    col_no = range(6,8)
+    alarm_setting = pd.read_excel(fname, usecols = col_no, skiprows = 2, sheet_name = 0)
+    return alarm_setting    
 
+
+def read_alarm_setting_file():    
+    fname = 'data\\IOT\\shared on 13.12.18\\Alarm Settings HH PH PL LL.xlsx'
+    col_no = range(4,10)
+    alarm_setting = pd.read_excel(fname, usecols = col_no, skiprows = 3, sheet_name = 1)
+    return alarm_setting    
+
+alarm_setting_old = read_alarm_setting_file_old()    
+alarm_setting = read_alarm_setting_file()
+
+# plot alarm setting old data 
+cleaned_aso = remove_non_numeric_values(alarm_setting_old)
+x = cleaned_aso.iloc[:,0]
+y = cleaned_aso.iloc[:,1]   
+plt.plot(x, y)
+plt.xticks(rotation = 'vertical')    
+    
+# plot alarm setting new data
+cleaned_as = remove_non_numeric_values(alarm_setting)
+for i in range(1,6): 
+    title = cleaned_as.columns[i]
+    x = cleaned_as.iloc[:,0]
+    y = cleaned_as.iloc[:,i]   
+    plt.plot(x, y)
+    plt.xticks(rotation = 'vertical') 
+    plt.title(title)
+    plt.show()
