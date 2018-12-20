@@ -19,7 +19,6 @@ from io import StringIO
 os.chdir('C:\\Users\\40204945\\Documents\\sumitomo')
 os.listdir('.')
 
-
 ###############################################################################
 ###############################################################################
 # Read the data
@@ -97,7 +96,7 @@ def plot_ts(i, df, desc):
     plt.show()
     return
 
-plot_ts(1, cleaned_df, col_desc)
+
 
 
 ###############################################################################
@@ -134,7 +133,7 @@ def plot_ts_with_change_point(i, df, desc, change_point):
 change_point_series = get_change_point_location(cleaned_df, 90)
 plot_ts_with_change_point(1, cleaned_df, col_desc, change_point_series)
 
-def get_index_to_delete(change_point, margin):
+def get_index_to_delete(change_point, margin, df):
     ind_to_delete = []
     for j in range(3):
         for i, change_type in enumerate(change_point[j]):
@@ -149,9 +148,7 @@ def get_index_to_delete(change_point, margin):
                 else:
                     next_time = df.loc[j].loc[next_ind].iloc[0]
                     diff = next_time - current_time
-                    print(diff)
                     if diff < margin:
-                        print('yes')
                         ind_to_delete.append((j, current_ind))
                         ind_to_delete.append((j, next_ind))
     return np.array(ind_to_delete)
@@ -167,122 +164,79 @@ def get_merged_change_point(change_point, ind_to_delete):
 
 
 margin = pd.Timedelta('10 days')                
-ind_to_delete = get_index_to_delete(change_point_series, margin)
+ind_to_delete = get_index_to_delete(change_point_series, margin, cleaned_df)
 merged_change_point = get_merged_change_point(change_point_series, ind_to_delete)   
 plot_ts_with_change_point(1, cleaned_df, col_desc, merged_change_point)
 
 
+def get_index_for_specified_load(j, merged_change_point, df, margin):
+    start_date = df.loc[j].iloc[0,0]
+    end_date = df.loc[j].iloc[-1,0]
+    n, _ = df.loc[j].shape
+    ind = np.zeros(n, dtype = bool)
+    for i, item in enumerate(merged_change_point[j]):
+        if item == 1:
+            st_ind = merged_change_point[j].index[i]
+            start_date = cleaned_df.loc[j].iloc[st_ind,0]
+            try:
+                en_ind = merged_change_point[j].index[i+1]
+            except:
+                end_date = df.loc[j].iloc[-1,0]
+            else:
+                end_date = df.loc[j].iloc[en_ind,0]
+            ind1 = df.loc[j].iloc[:,0]  > start_date + margin
+            ind2 = df.loc[j].iloc[:,0]  < end_date - margin
+            c_ind = ind1 & ind2
+            ind = ind | c_ind
+    return ind
 
-for item in merged_change_point:
-    print(item)    
+def get_merged_indices(merged_change_point, df, margin = pd.Timedelta('2 days')):
+    merged_ind = []
+    for j in range(3):
+        ind = get_index_for_specified_load(j, merged_change_point, df, margin)
+        merged_ind.append(ind)
+    merged_indices = pd.concat(merged_ind, keys = range(3))
+    return merged_indices
 
+merged_indices = get_merged_indices(merged_change_point, cleaned_df)
 
-ind_list = []
- 
-
-
-
-
-
-j = 0
-start_date = cleaned_df.loc[j].iloc[0,0]
-end_date = cleaned_df.loc[j].iloc[-1,0]
-n, _ = cleaned_df.loc[j].shape
-ind = np.zeros(n, dtype = bool)
-for i, item in enumerate(merged_change_point[j]):
-    if item == 1:
-        st_ind = merged_change_point[j].index[i]
-        start_date = cleaned_df.loc[j].iloc[st_ind,0]
-        try:
-            en_ind = merged_change_point[j].index[i+1]
-        except:
-            end_date = cleaned_df.loc[j].iloc[-1,0]
-        else:
-            end_date = cleaned_df.loc[j].iloc[en_ind,0]
-        ind1 = cleaned_df.loc[j].iloc[:,0]  > start_date
-        ind2 = cleaned_df.loc[j].iloc[:,0]  < end_date
-        c_ind = ind1 & ind2
-        ind = ind | c_ind
-        
-x = cleaned_df.loc[0].loc[ind,:].iloc[:,0]  
-y = cleaned_df.loc[0].loc[ind,:].iloc[:,2]  
-plt.plot(x,y)
-plt.xticks(rotation = 'vertical')    
-        
-
-x = cleaned_df.loc[0].iloc[:,0] 
-y = cleaned_df.loc[0].iloc[:,2].copy(deep = True)
-inv_ind = np.invert(ind)
-y[inv_ind] = None
-plt.plot(x,y)
-plt.xticks(rotation = 'vertical')   
-
-        
-
-
-###############################################################################
-# change indices
-###############################################################################
-def get_change_time_with_margin(updated_locations, updated_values, margin, df):
-    change_time_with_margin = []
-    for loc, status in zip(updated_locations, updated_values):
-        if status == True:
-            time = df.iloc[loc,0] - margin
-        else:
-            time = df.iloc[loc,0] + margin
-        change_time_with_margin.append(time)
-    return change_time_with_margin
-
-
-def get_updated_change_time_dict(updated_change_dict):
-    updated_change_time_dict = {}
-    for key in updated_change_dict.keys():
-        updated_locations = updated_change_dict[key]['change_locations']
-        updated_values = updated_change_dict[key]['change_values']
-        updated_change_time = get_change_time_with_margin(updated_locations, updated_values, margin, cleaned_df.loc[key])
-        updated_change_time_dict[key] = updated_change_time
-    return updated_change_time_dict
-
-
-
-  
-
-def plotting_clean_values(i, df, single_array_indices_dict):
-    for key in single_array_indices_dict.keys():
-        ind = single_array_indices_dict[key]
-        x = df.loc[key].iloc[:,0]
-        y = df.loc[key].iloc[:,i].copy(deep = True)
+def plot_values_in_specified_load_and_margin(i, merged_indices, df):
+    title = cleaned_df.columns[i]
+    for j in range(3):
+        ind = merged_indices[j]
+        x = df.loc[j].iloc[:,0] 
+        y = df.loc[j].iloc[:,i].copy(deep = True)
         inv_ind = np.invert(ind)
         y[inv_ind] = None
-        plt.plot(x, y, '--g')
+        plt.plot(x,y)
+    plt.title(title)    
     plt.xticks(rotation = 'vertical')
     plt.show()
     return
     
-plotting_clean_values(4, cleaned_df, single_array_indices_dict)
+plot_values_in_specified_load_and_margin(7, merged_indices, cleaned_df)
 
-
-def plot_histogram_with_alarm_limits(i, df, single_array_indices_dict):
+###############################################################################
+# histogram with alarm limits
+###############################################################################
+def plot_histogram_with_alarm_limits(i, merged_indices, df):
     y = []
-    for key in single_array_indices_dict.keys():
-        ind = single_array_indices_dict[key]
-        y_int = df.loc[key].iloc[ind,i].values.copy()
-        y_int = np.array(y_int, dtype='float') 
+    for j in range(3):
+        ind = merged_indices[j] 
+        y_int = df.loc[j].loc[ind].iloc[:,i].values.copy()
+        y_int = np.array(y_int, dtype='float')
         y.extend(y_int)
-    y =  np.array(y) 
-    y.flatten()  
+    y =  np.array(y)
+    y.flatten() 
     mean = np.mean(y)
     sd = np.std(y)
     sns.distplot(y, bins = 30, color = 'green')
     plt.axvline(x = mean, color = 'k')
     plt.axvline(x = mean + 3*sd, color = 'red')
     plt.axvline(x = mean - 3*sd, color = 'red')
-    plt.xlabel(df.columns[i])
+    plt.xlabel(cleaned_df.columns[i])
     plt.show()
-    return mean, sd
-
-mean, sd = plot_histogram_with_alarm_limits(4, cleaned_df, single_array_indices_dict)
-
+    return mean, sd    
 
     
 def plot_alarm_limit_on_ts(i, df, mean, sd):
@@ -302,54 +256,13 @@ def plot_alarm_limit_on_ts(i, df, mean, sd):
     plt.axhline(y=mean, color = 'k', linestyle='--')
     plt.axhline(y=upper, color = 'green', linestyle='--')
     plt.xticks(rotation = 'vertical')
-    plt.ylim(mean - 20*sd, mean + 20*sd)
+    plt.ylim(mean - 10*sd, mean + 10*sd)
     plt.title(df.columns[i])  
     plt.legend()
     plt.show()
     return
-    
-plot_alarm_limit_on_ts(4, cleaned_df, mean, sd)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-plot_demarcation(cleaned_df, updated_locations, updated_values, margin)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+for i in range(2,13):
+    mean, sd = plot_histogram_with_alarm_limits(i, merged_indices, cleaned_df)    
+    plot_alarm_limit_on_ts(i, cleaned_df, mean, sd)
+    plot_ts(i, cleaned_df, col_desc)
