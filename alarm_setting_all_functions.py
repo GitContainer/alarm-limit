@@ -33,19 +33,6 @@ def read_xl_data(i, name):
     df = pd.read_excel(fname, usecols = col_no, skiprows = 3, sheet_name=i)    
     return df
 
-
-###############################################################################
-# clean the data (Remove the non numeric characters)
-###############################################################################
-#def remove_non_numeric_values(df):
-#    ind = []
-#    for j, n in enumerate(df.iloc[:,1]):
-#        if np.isreal(n):
-#            if not np.isnan(n):
-#                ind.append(j)
-#    cleaned_df = df.loc[ind,:]
-#    return cleaned_df
-
 def remove_non_numeric_values(df):
     n, _ = df.shape
     ind = []
@@ -76,26 +63,6 @@ def get_col_desc(name):
     return col_desc
     
 
-###############################################################################
-# data visualization
-###############################################################################
-def plot_ts(i, df, desc):
-    col_name = df.columns[i]
-    for j in range(3):
-        x = df.loc[j].iloc[:,0]
-        y = df.loc[j].iloc[:,i]
-        plt.plot(x, y, color = 'blue') 
-    plt.xticks(rotation = 'vertical')
-    plt.title(col_name + ' : ' + desc[i-1])    
-    fname = 'results\\figures\\SMM' + col_name.replace('.', '') + '_ts' + '.jpeg'
-#    plt.xlabel('Date (YYYY-MM)')
-    plt.tight_layout()
-    plt.savefig(fname)
-    plt.show()
-    return
-
-
-###############################################################################
 def get_change_point_location(df, load):
     ind = df.iloc[:,1] > load
     ind_int = ind*1
@@ -103,28 +70,7 @@ def get_change_point_location(df, load):
     change_ind = abs(change_point) == 1
     return change_point.loc[change_ind]
     
-def plot_ts_with_change_point(i, df, desc, change_point):
-    col_name = df.columns[i]
-    for j in range(3):
-        ind = change_point[j].index
-        x_change = df.loc[j].loc[ind].iloc[:,0]
-        x = df.loc[j].iloc[:,0]
-        y = df.loc[j].iloc[:,i]
-        plt.plot(x, y, color = 'blue') 
-        for t, ct in zip(x_change, change_point[j]):
-            if ct == 1:
-                col = 'red'
-            if ct == -1:
-                col = 'green'
-            plt.axvline(x = t, color = col, linewidth = 0.4)
-    plt.xticks(rotation = 'vertical')
-    plt.title(col_name + ' : ' + desc[i-1])    
-    fname = 'results\\figures\\SMM' + col_name.replace('.', '') + '_ts' + '.jpeg'
-#    plt.xlabel('Date (YYYY-MM)')
-    plt.tight_layout()
-    plt.savefig(fname)
-    plt.show()
-    return
+
 
 def get_index_to_delete(change_point, margin, df):
     ind_to_delete = []
@@ -185,67 +131,7 @@ def get_merged_indices(merged_change_point, df, margin = pd.Timedelta('2 days'))
     return merged_indices
 
 
-def plot_values_in_specified_load_and_margin(i, merged_indices, df):
-    title = df.columns[i]
-    for j in range(3):
-        ind = merged_indices[j]
-        x = df.loc[j].iloc[:,0] 
-        y = df.loc[j].iloc[:,i].copy(deep = True)
-        inv_ind = np.invert(ind)
-        y[inv_ind] = None
-        plt.plot(x,y)
-    plt.title(title)    
-    plt.xticks(rotation = 'vertical')
-    plt.show()
-    return
-    
-###############################################################################
-# histogram with alarm limits
-###############################################################################
-def plot_histogram_with_alarm_limits(i, merged_indices, df):
-    y = []
-    for j in range(3):
-        ind = merged_indices[j] 
-        y_int = df.loc[j].loc[ind].iloc[:,i].values.copy()
-        y_int = np.array(y_int, dtype='float')
-        y.extend(y_int)
-    y =  np.array(y)
-    y.flatten() 
-    mean = np.mean(y)
-    sd = np.std(y)
-    sns.distplot(y, bins = 30, color = 'green')
-    plt.axvline(x = mean, color = 'k')
-    plt.axvline(x = mean + 3*sd, color = 'red')
-    plt.axvline(x = mean - 3*sd, color = 'red')
-    plt.xlabel(df.columns[i])
-    plt.show()
-    return mean, sd    
 
-    
-def plot_alarm_limit_on_ts(i, df, mean, sd):
-    x = df.iloc[:,0]
-    y = df.iloc[:,i].copy(deep=True)
-    y = np.array(y, dtype='float')
-    
-    lower = mean - 3*sd
-    upper = mean + 3*sd
-    
-    youtside = np.ma.masked_inside(y, lower, upper)
-    yinside = np.ma.masked_outside(y, lower, upper)
-    plt.plot(x, youtside, 'red', label = 'Abnormal')
-    plt.plot(x, yinside, 'green', label = 'Normal')
-     
-    plt.axhline(y=lower, color = 'green', linestyle='--')
-    plt.axhline(y=mean, color = 'k', linestyle='--')
-    plt.axhline(y=upper, color = 'green', linestyle='--')
-    plt.xticks(rotation = 'vertical')
-    plt.ylim(mean - 10*sd, mean + 10*sd)
-    plt.title(df.columns[i])  
-    plt.legend()
-    plt.show()
-    return
-
-   
 ###############################################################################
 # moving average
 ###############################################################################
@@ -254,17 +140,7 @@ def moving_average(a, n=3) :
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
 
-def plot_moving_average(i, df, window_size = 1*24*60):
-    for j in range(3):
-        x = df.loc[j].iloc[:,0]
-        y = df.loc[j].iloc[:,i].copy(deep=True)
-        y = np.array(y, dtype='float')
-        y_mv = moving_average(y, n=window_size)
-        plt.plot(x,y, color = 'blue')
-        plt.plot(x[window_size-1:], y_mv, color = 'red')
-    plt.xticks(rotation = 'vertical')
-    plt.show()
-    return
+
 
 ###############################################################################
 # Final Run: Plugged Data
