@@ -142,8 +142,9 @@ mean, sd = get_y_stats(y_clean)
 ###############################################################################
 # Plotting functions
 ###############################################################################
-def plot_ts_subset(i, df):
-    f, ax = plt.subplots()
+def plot_ts_subset(i, df, ax = None):
+    if ax is None:
+        f, ax = plt.subplots()
     x = df.iloc[:,0]
     y = df.iloc[:,i]
     ax.plot(x, y, color = 'b') 
@@ -326,27 +327,59 @@ def get_mean_sd(input_data):
     mean, sd = get_y_stats(y_clean)
     return mean, sd
     
-
-margin = pd.Timedelta('2 days')
+i = 3
+margin = pd.Timedelta('5 days')
 load = [90, 100]
 change_points, merged_indices =  get_change_points_and_merged_indices(margin, load, cleaned_abnormal_df)
-input_data = get_input_data_for_alarm_setting(2, merged_indices, cleaned_abnormal_df)
+input_data = get_input_data_for_alarm_setting(i, merged_indices, cleaned_abnormal_df)
 mean, sd = get_mean_sd(input_data)
 
-
+###############################################################################
+# Plotting alarm limit on time series
+###############################################################################
 for i, item in enumerate(input_data):
     x, y = item[0], item[1]
     if i == 0:
         ax = plot_alarm_limit_on_ts(x, y, mean, sd)
     else:
         ax = plot_alarm_limit_on_ts(x, y, mean, sd, ax)
+        ax.legend(['Abnormal', 'Normal'])
     
+
+###############################################################################
+# plotting all the data together
+###############################################################################
+# 1 in the same plot
+i = 2
+for j in range(3):
+    ind = merged_indices[j]
+    sdf = cleaned_abnormal_df.loc[j]
+    if j == 0:
+        ax = plot_ts_subset(1, sdf)
+        ax0 = plot_values_in_specified_load_and_margin(i, ind, sdf, ax)
+    else:
+        ax = plot_ts_subset(1, sdf, ax)
+        ax0 = plot_values_in_specified_load_and_margin(i, ind, sdf, ax) 
+           
+ax = set_y_limit(80, 110, ax)
+ax = add_y_line(load[0], ax)
+ax = add_y_line(load[1], ax)
+
+# 2 in different plot
+i = 2
+for j in range(3):
+    ind = merged_indices[j]
+    sdf = cleaned_abnormal_df.loc[j]
+    ax = plot_ts_subset(1, sdf)
+    ax0 = plot_values_in_specified_load_and_margin(i, ind, sdf, ax)
+    ax = set_y_limit(80, 110, ax)
+    ax = add_y_line(load[0], ax)
+    ax = add_y_line(load[1], ax)
         
 
-
-
-
-
+###############################################################################
+#
+###############################################################################
 
 
 
