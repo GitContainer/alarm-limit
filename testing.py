@@ -378,10 +378,37 @@ for j in range(3):
         
 
 ###############################################################################
-#
+# plotting histogram for the whole period
 ###############################################################################
+y_clean = []
+for item in input_data:
+    y_clean.extend(item[2])
+y_clean = np.array(y_clean)
+ax = plot_histogram_with_alarm_limits(y_clean, mean, sd)
+ax = set_y_limit(150, 300, ax)
+
+###############################################################################
+# alarm limit histogram together
+###############################################################################
+y_clean = []
+for item in input_data:
+    y_clean.extend(item[2])
+y_clean = np.array(y_clean)
+mean, sd = get_mean_sd(input_data)
 
 
+fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True)
+i = 2
+for j in range(3):
+    ind = merged_indices[j]
+    sdf = cleaned_abnormal_df.loc[j]
+    ax1 = plot_ts_subset(i, sdf, ax1)
+ax1 = set_y_limit(150, 300, ax1)           
+ax1 = add_y_line(mean + 2*sd, ax1)
+ax1 = add_y_line(mean - 2*sd, ax1)
+ax1 = add_y_line(mean, ax1)
+ax2 = plot_histogram_with_alarm_limits(y_clean, mean, sd, ax2)
+ax2 = set_y_limit(150, 300, ax2)
 
 
 
