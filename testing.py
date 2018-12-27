@@ -89,18 +89,22 @@ def get_indices_for_normal_period(change_point, margin, df):
             ind = ind | c_ind
     return ind
         
-def subset_data_for_alarm_limit_setting(i, dates, ind, df):
+def subset_data_for_alarm_limit_setting(i, ind, df, dates = None):
+    if dates is not None:
+        ind1 = df.iloc[:,0] > dates[0]
+        ind2 = df.iloc[:,0] < dates[1]
+        date_ind = ind1 & ind2
     
-    ind1 = df.iloc[:,0] > dates[0]
-    ind2 = df.iloc[:,0] < dates[1]
-    date_ind = ind1 & ind2
+        x = df.loc[date_ind,:].iloc[:,0].values
+        y = df.loc[date_ind,:].iloc[:,i].values.copy()
+        f_ind = date_ind & ind
+        y_clean = df.loc[f_ind,:].iloc[:,i].values.copy()
+    else:
+        x = df.iloc[:,0].values
+        y = df.iloc[:,i].values.copy()
+        y_clean = df.loc[ind,:].iloc[:,i].values.copy()
     
-    x = df.loc[date_ind,:].iloc[:,0].values
-    y = df.loc[date_ind,:].iloc[:,i].values.copy()
     y = np.array(y, dtype='float')
-        
-    f_ind = date_ind & ind
-    y_clean = df.loc[f_ind,:].iloc[:,i].values.copy()
     y_clean = np.array(y, dtype='float')
     return x, y, y_clean 
 
@@ -218,8 +222,8 @@ def plot_alarm_limit_on_ts(x, y, mean, sd, ax = None):
     ax.axhline(y=mean, color = 'k', linestyle='--')
     ax.axhline(y=upper, color = 'red', linestyle='--')
     ax.tick_params(axis='x', rotation=90)
-    ax.set_ylim(mean - 10*sd, mean + 10*sd)
-    ax.legend()
+    ax.set_ylim(mean - 5*sd, mean + 5*sd)
+#    ax.legend()
     return ax
 
 
@@ -278,12 +282,68 @@ ax = plot_ts_subset(3, sdf)
 ax = plot_moving_average(3, sdf, window_size = 5*24*60, ax = ax)
 ax = set_y_limit(175, 230, ax)
 
-
-
 ###############################################################################
 # Now implement for the whole system
 ###############################################################################
-cleaned_abnormal_df
+def get_change_points_and_merged_indices(margin, load, df):
+    change_points = []
+    merged_indices = []
+    try:
+        levels = df.index.levels[0]
+    except:
+        pass
+    else:
+        for level in levels:
+            sdf = df.loc[level]            
+            change_point = get_change_point_location(sdf, load)
+            ind = get_indices_for_normal_period(change_point, margin, sdf)
+            change_points.append(change_point)
+            merged_indices.append(ind)
+    return change_points, merged_indices
+
+
+def get_input_data_for_alarm_setting(i, merged_indices, df, dates = None):
+    input_data = []
+    try:
+        levels = df.index.levels[0]
+    except:
+        pass
+    else:
+        for level in levels:
+            sdf = df.loc[level]
+            ind = merged_indices[level]
+            raw_data = subset_data_for_alarm_limit_setting(i, ind, sdf) #x, y, y_clean
+            input_data.append(raw_data)
+    return input_data
+
+
+def get_mean_sd(input_data):
+    y_clean = []
+    for item in input_data:
+        y_clean.extend(item[2])
+    y_clean = np.array(y_clean)
+    
+    mean, sd = get_y_stats(y_clean)
+    return mean, sd
+    
+
+margin = pd.Timedelta('2 days')
+load = [90, 100]
+change_points, merged_indices =  get_change_points_and_merged_indices(margin, load, cleaned_abnormal_df)
+input_data = get_input_data_for_alarm_setting(2, merged_indices, cleaned_abnormal_df)
+mean, sd = get_mean_sd(input_data)
+
+
+for i, item in enumerate(input_data):
+    x, y = item[0], item[1]
+    if i == 0:
+        ax = plot_alarm_limit_on_ts(x, y, mean, sd)
+    else:
+        ax = plot_alarm_limit_on_ts(x, y, mean, sd, ax)
+    
+        
+
+
 
 
 
