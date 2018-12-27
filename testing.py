@@ -99,8 +99,8 @@ def subset_data_for_alarm_limit_setting(i, dates, ind, df):
     y = df.loc[date_ind,:].iloc[:,i].values.copy()
     y = np.array(y, dtype='float')
         
-    ind = date_ind & ind
-    y_clean = df.loc[ind,:].iloc[:,i].values.copy()
+    f_ind = date_ind & ind
+    y_clean = df.loc[f_ind,:].iloc[:,i].values.copy()
     y_clean = np.array(y, dtype='float')
     return x, y, y_clean 
 
@@ -108,6 +108,11 @@ def get_y_stats(y):
     mean = np.mean(y)
     sd = np.std(y)
     return mean, sd
+
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
 
 
 ###############################################################################
@@ -120,6 +125,8 @@ margin = pd.Timedelta('0 days')
 dates = [start_date, end_date]
 load = [90, 97]
 sdf = get_subset_df(0, dates, cleaned_abnormal_df)
+
+sdf = cleaned_abnormal_df.loc[0]
 change_point = get_change_point_location(sdf, load)
 ind = get_indices_for_normal_period(change_point, margin, sdf)
 x, y, y_clean = subset_data_for_alarm_limit_setting(2, dates, ind, sdf)
@@ -166,6 +173,7 @@ def add_y_line(y, ax):
 
 
 def plot_values_in_specified_load_and_margin(i, ind, df, ax = None):
+    ylabel = df.columns[i]
     if ax is None:
         f, ax0 = plt.subplots()
     else:
@@ -177,14 +185,14 @@ def plot_values_in_specified_load_and_margin(i, ind, df, ax = None):
     ax0.plot(x, y, color = 'orange')
     plt.xticks(rotation = 'vertical')
     ax0.tick_params(axis='y', labelcolor='orange')
-    ax0.set_ylabel('ylabel', color='orange')
+    ax0.set_ylabel(ylabel, color='orange')
     return ax0
 
 def plot_histogram_with_alarm_limits(y, mean, sd, ax = None):
     if ax is None:
         f, ax = plt.subplots()
-    hh = round(mean + 3*sd, 2)
-    ll = round(mean - 3*sd, 2)
+    hh = round(mean + 2*sd, 2)
+    ll = round(mean - 2*sd, 2)
     sns.distplot(y, bins = 30, color = 'green', vertical = True, ax = ax)
     ax.axhline(y = mean, color = 'k', linestyle = '--')
     ax.axhline(y = hh, color = 'red', linestyle = '--')
@@ -197,8 +205,8 @@ def plot_alarm_limit_on_ts(x, y, mean, sd, ax = None):
     if ax is None:
         f, ax = plt.subplots()
         
-    lower = mean - 3*sd
-    upper = mean + 3*sd
+    lower = mean - 2*sd
+    upper = mean + 2*sd
     
     youtside = np.ma.masked_inside(y, lower, upper)
     yinside = np.ma.masked_outside(y, lower, upper)
@@ -215,27 +223,67 @@ def plot_alarm_limit_on_ts(x, y, mean, sd, ax = None):
     return ax
 
 
+def plot_moving_average(i, df, window_size = 1*24*60, ax = None):
+    if ax is None:
+        fig, ax = plt.subplots()
+    
+    x = df.iloc[:,0]
+    y = df.iloc[:,i].copy(deep=True)
+    y = np.array(y, dtype='float')
+    y_mv = moving_average(y, n=window_size)
+    ax.plot(x[window_size-1:], y_mv, color = 'red')    
+    ax.tick_params(axis='x', rotation=90)
+    return ax
+
+
+
+
 ###############################################################################
 # plotting
 ###############################################################################
+i = 3
+sdf = cleaned_abnormal_df.loc[2]
+#start_date = '2014-04-16 00:00:00'
+#end_date = '2015-10-29 00:00:00'
+#start_date = '2017-05-20 00:00:00'
+#end_date = '2018-01-29 00:00:00'
+start_date = '2018-04-12 00:00:00'
+end_date = '2018-12-07 00:00:00'
+dates = [start_date, end_date]
+margin = pd.Timedelta('5 days')
+load = [90, 100]
+
+change_point = get_change_point_location(sdf, load)
+ind = get_indices_for_normal_period(change_point, margin, sdf)
+
 ax = plot_ts_subset(1, sdf)
-ax = set_y_limit(80, 100, ax)
+ax = set_y_limit(80, 110, ax)
 ax = add_y_line(load[0], ax)
 ax = add_y_line(load[1], ax)
 #ax = add_change_points_subset(change_point, sdf, ax)
-ax0 = plot_values_in_specified_load_and_margin(1, ind, sdf, ax)
-ax0 = set_y_limit(80, 100, ax0)
+ax0 = plot_values_in_specified_load_and_margin(i, ind, sdf, ax)
+#ax0 = set_y_limit(150, 250, ax0)
 
 
-dates = [start_date, end_date]
-x, y, y_clean = subset_data_for_alarm_limit_setting(2, dates, ind, sdf)
+
+change_point = get_change_point_location(sdf, load)
+ind = get_indices_for_normal_period(change_point, margin, sdf)
+x, y, y_clean = subset_data_for_alarm_limit_setting(i, dates, ind, sdf)
 mean, sd = get_y_stats(y_clean)
 fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True)
 plot_alarm_limit_on_ts(x, y, mean, sd, ax1)
 plot_histogram_with_alarm_limits(y_clean, mean, sd, ax2)
 
+ax = plot_ts_subset(3, sdf)
+ax = plot_moving_average(3, sdf, window_size = 5*24*60, ax = ax)
+ax = set_y_limit(175, 230, ax)
 
 
+
+###############################################################################
+# Now implement for the whole system
+###############################################################################
+cleaned_abnormal_df
 
 
 
