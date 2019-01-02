@@ -179,8 +179,22 @@ def moving_average(a, n=3) :
 ###############################################################################
 # Step 1: Read the data
 ###############################################################################
-abnormal_df = get_cleaned_and_merged_df('abnormality_data')
-plug_df = get_cleaned_and_merged_df('plug_data')
+#abnormal_df = get_cleaned_and_merged_df('abnormality_data')
+#plug_df = get_cleaned_and_merged_df('plug_data')
+
+
+###############################################################################
+# pickle to loaded df
+###############################################################################
+#abnormal_df.to_pickle("./abnormal_df.pkl")
+#plug_df.to_pickle("./plug_df.pkl")
+
+###############################################################################
+# Read the pickled data
+###############################################################################
+abnormal_df = pd.read_pickle("./abnormal_df.pkl")
+plug_df = pd.read_pickle("./plug_df.pkl")
+
 
 ###############################################################################
 # Step 2: get the subset data for alarm limit setting
