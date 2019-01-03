@@ -13,6 +13,7 @@ from scipy.signal import correlate
 import scipy.stats as stats
 import seaborn as sns
 from io import StringIO
+from sys import getsizeof
 
 
 ###############################################################################
@@ -59,123 +60,6 @@ def get_cleaned_and_merged_df(name):
     cleaned_df = pd.concat(frames, keys=[0,1,2])
     return cleaned_df
 
-###############################################################################    
-###############################################################################
-# data subsetting for alarm limit setting
-###############################################################################
-def get_change_point_location(df, load):
-    ind1 = df.iloc[:,1] > load[0]
-    ind2 = df.iloc[:,1] < load[1]
-    ind = ind1 & ind2
-    ind_int = ind*1
-    change_point = ind_int.diff()
-    change_ind = abs(change_point) == 1
-    return change_point.loc[change_ind]
-
-
-def get_index(start_date, end_date, margin, df):
-    ind1 = df.iloc[:,0]  > start_date + margin
-    ind2 = df.iloc[:,0]  < end_date - margin
-    ind = ind1 & ind2
-    return ind
-
-
-def get_start_end_date_running_plant(change_point, df):
-    start_date = df.iloc[0,0]
-    try:
-       end_ind = change_point.index[0] 
-    except:
-        end_date = df.iloc[-1,0]
-    else:
-        end_date = df.loc[end_ind].iloc[0]
-    return start_date, end_date
-
-
-def get_start_end_date_plant_restart(i, change_point, df):
-    start_ind = change_point.index[i]
-    start_date = df.loc[start_ind].iloc[0]
-    try:
-        end_ind = change_point.index[i+1]
-    except:
-        end_date = df.iloc[-1,0]
-    else:
-        end_date = df.loc[end_ind].iloc[0]
-    return start_date, end_date
-
-def get_indices_for_normal_period(change_point, margin, df):
-    n, _ = df.shape
-    ind = np.zeros(n, dtype = bool)
-    for i, item in enumerate(change_point):
-        if i == 0:
-            if item == -1:              
-                start_date, end_date = get_start_end_date_running_plant(change_point, df) 
-                c_ind = get_index(start_date, end_date, margin, df)
-                ind = ind | c_ind
-        if item == 1:           
-            start_date, end_date = get_start_end_date_plant_restart(i, change_point, df)
-            c_ind = get_index(start_date, end_date, margin, df)
-            ind = ind | c_ind
-    return ind
-        
-def subset_data_for_alarm_limit_setting(i, ind, df, dates = None):
-    if dates is not None:
-        ind1 = df.iloc[:,0] > dates[0]
-        ind2 = df.iloc[:,0] < dates[1]
-        date_ind = ind1 & ind2
-    
-        x = df.loc[date_ind,:].iloc[:,0].values
-        y = df.loc[date_ind,:].iloc[:,i].values.copy()
-        f_ind = date_ind & ind
-        y_clean = df.loc[f_ind,:].iloc[:,i].values.copy()
-    else:
-        x = df.iloc[:,0].values
-        y = df.iloc[:,i].values.copy()
-        y_clean = df.loc[ind,:].iloc[:,i].values.copy()
-    
-    y = np.array(y, dtype='float')
-    y_clean = np.array(y_clean, dtype='float')
-    return x, y, y_clean 
-
-
-def get_input_data_for_alarm_setting(i, load, margin, df, dates):
-    indices = []
-    input_data = []
-    try:
-        levels = df.index.levels[0]
-    except:
-        pass
-    else:
-        for level in levels:
-            sdf = df.loc[level]
-            change_point = get_change_point_location(sdf, load)
-            ind = get_indices_for_normal_period(change_point, margin, sdf)
-            raw_data = subset_data_for_alarm_limit_setting(i, ind, sdf, dates) #x, y, y_clean
-            indices.append(ind)
-            input_data.append(raw_data)
-    return input_data, indices
-
-###############################################################################
-# Get statistics
-###############################################################################
-def get_mean_sd(input_data):
-    
-    y_clean = []
-    for item in input_data:
-        y_clean.extend(item[2])
-        
-    y_clean = np.array(y_clean)
-    
-    mean = np.mean(y_clean)
-    sd = np.std(y_clean)
-
-    return mean, sd    
-
-def moving_average(a, n=3) :
-    ret = np.cumsum(a, dtype=float)
-    ret[n:] = ret[n:] - ret[:-n]
-    return ret[n - 1:] / n
-
-
 ###############################################################################
 # Step 1: Read the data
 ###############################################################################
@@ -190,90 +74,140 @@ def moving_average(a, n=3) :
 #plug_df.to_pickle("./plug_df.pkl")
 
 ###############################################################################
-# Read the pickled data
+# Step 1: Read the pickled data
 ###############################################################################
 abnormal_df = pd.read_pickle("./abnormal_df.pkl")
 plug_df = pd.read_pickle("./plug_df.pkl")
+abnormal_df.memory_usage()
+getsizeof(abnormal_df)
+getsizeof(plug_df)
+###############################################################################    
+###############################################################################
+# data subsetting for alarm limit setting
+###############################################################################
+def get_load_change_index_locations_and_type(df, load):
+    '''when the plant is running within the specified load
+    the condition is true, otherwise it is false. Therefore,
+    the difference value of +1 indicates the plant has moved into 
+    the desired load zone. Conversley, the difference value of -1
+    indicates that the plant has moved out of the desired load zone.
+    '''
+    ind1 = df.iloc[:,1] > load[0]
+    ind2 = df.iloc[:,1] < load[1]
+    ind = ind1 & ind2
+    ind_int = ind*1
+    change_point = ind_int.diff()
+    change_ind = abs(change_point) == 1
+    return change_point.loc[change_ind]
+
+loads = [90, 100]
+change_indices = get_load_change_index_locations_and_type(abnormal_df, loads)
+###############################################################################
+# Get all the start and end date with margin when the plant is running 
+# within specified load
+###############################################################################
+
+def get_individual_start_and_end_time_within_specified_load_limit(i, change_point, margin, df):
+    if i == 0:
+        start_date = df.iloc[0,0]
+        end_ind = change_point.index[0]
+        end_date = df.loc[end_ind].iloc[0]
+    else:
+        start_ind = change_point.index[i]
+        start_date = df.loc[start_ind].iloc[0]
+        try:
+            end_ind = change_point.index[i+1]
+        except:
+            end_date = df.iloc[-1,0]
+        else:
+            end_date = df.loc[end_ind].iloc[0]
+    return start_date + margin, end_date - margin
+    
+    
+def get_all_start_end_time_within_specified_load_limit(change_points, margin, df):
+    dates = []
+    for i, item in enumerate(change_points):
+        if i == 0:
+            if item == -1:              
+                date = get_individual_start_and_end_time_within_specified_load_limit(i, change_points, margin, df)
+                dates.append(date)
+        if item == 1:           
+            date = get_individual_start_and_end_time_within_specified_load_limit(i, change_points, margin, df)
+            dates.append(date)
+    return dates
+    
+###############################################################################
+# Get boolean indices when the plant is running within specified load and within
+# specified period
+###############################################################################
+
+def get_load_indices(valid_dates, df):
+    n, _ = df.shape
+    load_indices = np.zeros(n, dtype = bool)
+    for date1, date2 in valid_dates:
+        ind1 = df.iloc[:,0] > date1
+        ind2 = df.iloc[:,0] < date2
+        ind = ind1 & ind2
+        load_indices = load_indices | ind
+    return load_indices
+        
+def get_date_indices(start_date, end_date, df):
+    ind1 = df.iloc[:,0] > start_date
+    ind2 = df.iloc[:,0] < end_date
+    ind = ind1 & ind2 
+    return ind
+
+def get_indices(load_indices, date_indices):
+    indices = date_indices & load_indices
+    return indices
+    
+
+###############################################################################
+# Subset data frame based on indices
+###############################################################################
+def get_df_subset(i, ind, df):
+    x = df.loc[ind,:].iloc[:,0].values
+    y = df.loc[ind,:].iloc[:,i].values.copy()
+    y = np.array(y, dtype='float')
+    return x, y
+    
+
+###############################################################################
+# Get statistics
+###############################################################################
+def get_mean_sd(y):     
+    mean = np.mean(y)
+    sd = np.std(y)
+    return mean, sd    
+
+def moving_average(y, window=24*60) :
+    ret = np.cumsum(y, dtype=float)
+    ret[window:] = ret[window:] - ret[:-window]
+    return ret[window - 1:] / window
 
 
 ###############################################################################
-# Step 2: get the subset data for alarm limit setting
+#  get the result
 ###############################################################################
-i = 4
-print(cleaned_abnormal_df.columns[i])
-load = [90, 100]
+loads = [90, 100]
+margin = pd.Timedelta('5 days')
 start_date = '2014-04-12 00:00:00'
 end_date = '2015-12-07 00:00:00'
-dates = [start_date, end_date]
-margin = pd.Timedelta('5 days')
-abnormal_input_data, indices = get_input_data_for_alarm_setting(i, load, margin, cleaned_abnormal_df, dates)
-mean, sd = get_mean_sd(abnormal_input_data)
-
-
-
-
-
-
-
-###############################################################################
-# Step 3: Check the input data by plotting
-###############################################################################
-df = cleaned_abnormal_df.loc[0]
-ind1 = df.iloc[:,0] > start_date
-ind2 = df.iloc[:,0] < end_date
-date_ind = ind1 & ind2
-f_ind = date_ind & ind
-
-x = df.loc[date_ind,:].iloc[:,0].values
-y = df.loc[date_ind,:].iloc[:,i].values.copy()
-y_clean = df.loc[f_ind,:].iloc[:,i].values.copy()
-
-# debuggin
-i = 4
-print(cleaned_abnormal_df.columns[i])
-load = [90, 100]
-start_date = '2014-04-12 00:00:00'
-end_date = '2015-06-07 00:00:00'
-dates = [start_date, end_date]
-margin = pd.Timedelta('5 days')
-abnormal_input_data, indices = get_input_data_for_alarm_setting(i, load, margin, cleaned_abnormal_df, dates)
-ind = indices[0]
-change_point = get_change_point_location(cleaned_abnormal_df.loc[0], load)
-
+change_indices = get_load_change_index_locations_and_type(abnormal_df, loads)
+valid_dates = get_all_start_end_time_within_specified_load_limit(change_indices, margin, abnormal_df)
+load_indices = get_load_indices(valid_dates, abnormal_df)
+date_indices = get_date_indices(start_date, end_date, abnormal_df)
+indices = get_indices(load_indices, date_indices)
 
 i = 4
-start_date = '2014-04-12 00:00:00'
-end_date = '2015-06-07 00:00:00'
-df = cleaned_abnormal_df
-indices = []
-input_data = []
-for j in range(3):
-    sdf = df.loc[j]
-    change_point = get_change_point_location(sdf, load)
-    ind = get_indices_for_normal_period(change_point, margin, sdf)
-    raw_data = subset_data_for_alarm_limit_setting(i, ind, sdf, dates) #x, y, y_clean
-    indices.append(ind)
-    input_data.append(raw_data)
+x, y = get_df_subset(i, indices, abnormal_df)
+x1, y1 = get_df_subset(i, date_indices, abnormal_df)
+x2, y2 = get_df_subset(i, load_indices, abnormal_df)
+mean, sd = get_mean_sd(y)
+y_mv = moving_average(y, window=24*60)
+plt.plot(x,y)
+plt.plot(x[24*60 - 1:], y_mv)
 
-
-
-len(input_data)
-for item in input_data:
-    print(len(item[0]), len(item[1]), len(item[2]))
-
-
-
-
-###############################################################################
-# Step 3: Plot the results
-###############################################################################
-for i, item in enumerate(abnormal_input_data):
-    x, y = item[0], item[1]
-    if i == 0:
-        ax = plot_alarm_limit_on_ts(x, y, mean, sd)
-    else:
-        ax = plot_alarm_limit_on_ts(x, y, mean, sd, ax)
-    
 
 
 
