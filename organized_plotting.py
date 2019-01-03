@@ -66,7 +66,7 @@ def add_y_label(label, ax, col = 'k'):
     return ax
 
 
-def add_y_line(y, ax):
+def add_h_line(y, ax):
     for value in y:
         ax.axhline(y = value, color = 'k', linewidth = 1, linestyle = '--')
     return ax
@@ -100,27 +100,7 @@ def add_change_points(change_point, df, ax):
 # valid_dates, load_indices, date_indices, indices, start_date, end_date, abnormal_df
 # start_date = 
 ###############################################################################
-i = 1
-f, ax = plt.subplots()
-#ax = plot_ts(i, abnormal_df.loc[1], ax, col = 'b')
-#
-#plot_subset_by_boolean_index(date_indices, abnormal_df)
-#ax = rotate_x_label(ax, 90)
-#ax = plot_subset_by_boolean_index(load_indices, abnormal_df, col = 'r', invert = True)
-#ax = plot_subset_by_boolean_index(load_indices, abnormal_df, col = 'b', invert = False)
-ax = plot_subset_by_boolean_index(i, indices, abnormal_df, ax, col = 'r', invert = True)
-ax = plot_subset_by_boolean_index(i, indices, abnormal_df, ax, col = 'g', invert = False)
-ax = set_y_limit(65, 105, ax)
-ax = rotate_x_label(ax, 90)
-#
 
-i = 4
-ax0 = create_twin_axis(ax)
-#f, ax0 = plt.subplots()
-ax0 = plot_subset_by_boolean_index(i, indices, abnormal_df, ax0, col = 'r', invert = True)
-ax0 = plot_subset_by_boolean_index(i, indices, abnormal_df, ax0, col = 'g', invert = False)
-ax0 = set_x_limit(start_date, end_date, ax0)
-ax0 = set_y_limit(110, 130, ax0)
 
 ###############################################################################
 # Histogram plot
@@ -175,7 +155,10 @@ def plot_alarm_limit_on_ts(i, mean, sd, df, ax):
 
 
 
-
+###############################################################################
+# Simple plot of time series with color coded data subsetting 
+###############################################################################
+# Step 1: Get the data
 loads = [90, 100]
 margin = pd.Timedelta('5 days')
 start_date = '2014-04-12 00:00:00'
@@ -186,12 +169,64 @@ load_indices = get_load_indices(valid_dates, abnormal_df)
 date_indices = get_date_indices(start_date, end_date, abnormal_df)
 indices = get_indices(load_indices, date_indices)
 
+# Step 2: time series plotting
+i = 1
+f, ax = plt.subplots()
+#ax = plot_ts(i, abnormal_df.loc[1], ax, col = 'b')
+#
+#plot_subset_by_boolean_index(date_indices, abnormal_df)
+#ax = rotate_x_label(ax, 90)
+#ax = plot_subset_by_boolean_index(load_indices, abnormal_df, col = 'r', invert = True)
+#ax = plot_subset_by_boolean_index(load_indices, abnormal_df, col = 'b', invert = False)
+ax = plot_subset_by_boolean_index(i, indices, abnormal_df, ax, col = 'r', invert = True)
+ax = plot_subset_by_boolean_index(i, indices, abnormal_df, ax, col = 'g', invert = False)
+ax = set_y_limit(65, 105, ax)
+ax = rotate_x_label(ax, 90)
+#
+
+i = 4
+ax0 = create_twin_axis(ax)
+#f, ax0 = plt.subplots()
+ax0 = plot_subset_by_boolean_index(i, indices, abnormal_df, ax0, col = 'r', invert = True)
+ax0 = plot_subset_by_boolean_index(i, indices, abnormal_df, ax0, col = 'g', invert = False)
+ax0 = set_x_limit(start_date, end_date, ax0)
+ax0 = set_y_limit(110, 130, ax0)
+
+# Step 3: histogram plotting
 i = 4
 x, y = get_df_subset(i, indices, abnormal_df)
 mean, sd = get_mean_sd(y)
 f, ax = plt.subplots()
-#plot_histogram_with_alarm_limits(y, mean, sd, ax)
+plot_histogram_with_alarm_limits(y, mean, sd, ax)
+
+# Step 4: histogram input data plotting
+i = 4
+f, ax = plt.subplots()
+ax = plot_subset_by_boolean_index(i, indices, abnormal_df, ax, col = 'r', invert = True)
+ax = plot_subset_by_boolean_index(i, indices, abnormal_df, ax, col = 'g', invert = False)
+ax = set_x_limit(start_date, end_date, ax)
+ax = set_y_limit(115, 122, ax)
+ax = rotate_x_label(ax, 90)
+
+# Step 5: histogram input and histogram plotting on the same graph
+i = 4
+x, y = get_df_subset(i, indices, abnormal_df)
+mean, sd = get_mean_sd(y)
+fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True)
+ax1 = plot_subset_by_boolean_index(i, indices, abnormal_df, ax1, col = 'r', invert = True)
+ax1 = plot_subset_by_boolean_index(i, indices, abnormal_df, ax1, col = 'g', invert = False)
+ax1 = set_x_limit(start_date, end_date, ax1)
+ax1 = set_y_limit(115, 122, ax1)
+ax1 = rotate_x_label(ax1, 90)
+ax1 = add_h_line([mean], ax1)
+
+ax2 = plot_histogram_with_alarm_limits(y, mean, sd, ax2)
+
+
+# Step 5: alarm limit plotting on the time series
+f, ax = plt.subplots()
 ax = plot_alarm_limit_on_ts(i, mean, sd, abnormal_df, ax)
+
 
 i = 4
 x, y = get_df_subset(i, indices, abnormal_df)
