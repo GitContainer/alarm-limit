@@ -45,6 +45,10 @@ scale_dic['abnormal']['PI8221.PV'] = [180, 260]
 scale_dic['abnormal']['FC8228D.PV'] = [8, 11]
 scale_dic['abnormal']['FI8228A.PV'] = [2.5, 4]
 scale_dic['abnormal']['PI8228.PV'] = [160, 260]
+scale_dic['abnormal']['LC8220.PV'] = [66,73]
+scale_dic['abnormal']['PC8223A.PV'] = [104, 106]
+scale_dic['abnormal']['PI8223B.PV'] = [106, 108]
+scale_dic['abnormal']['PI8223B.PV'] = [38.50, 39.50]
 scale_dic['plug']= {}
 scale_dic['plug']['FC1215LD.CPV'] = [60, 115]
 scale_dic['plug']['TI1221A.PV'] = [115, 129]
@@ -52,7 +56,10 @@ scale_dic['plug']['PI1221.PV'] = [160, 260]
 scale_dic['plug']['FC1228c.PV'] = [3.5, 5.5]
 scale_dic['plug']['FI1228A.PV'] = [1.2, 3.2]
 scale_dic['plug']['PI1228.PV'] = [150, 280]
-
+scale_dic['plug']['LC1220.PV'] = [55, 85]
+scale_dic['plug']['PC1223A.PV'] = [100, 110]
+scale_dic['plug']['PI1223B.PV'] = [100, 110]
+scale_dic['plug']['PI1223B.PV'] = [21, 25]
 
 def plot_ts(i, df, dname, scale_dic, ax):
     colname = df.columns[i]
@@ -198,10 +205,11 @@ for i in cols:
     plt.xticks(rotation='vertical')
     plt.show()
 
-
 ###############################################################################
-# Plotting the abnormal trends
+# determine the normal running period for fault detection algorithm
 ###############################################################################
+abnormal_df.head()
+abnormal_df.loc[3]
 
 
 
@@ -211,46 +219,6 @@ for i in cols:
 
 
 
-
-###############################################################################
-# Distillation column bottom level, Relux pressure and the reboiler chemical 
-# dosing are not indicative
-###############################################################################
-# 6. Distillation column bottom level
-i = 8
-y = sorted_df.iloc[:,i]
-plt.plot(x,y, lw = 0, marker = 'o', ms = 0.03)
-#plt.ylim(66, 73)
-plt.ylim(55, 85)
-plt.title(colnames[i])
-plt.xticks(rotation='vertical')
-
-# 7. Reflux pressure Controller
-i = 5
-y = sorted_df.iloc[:,i]
-plt.plot(x,y, lw = 0, marker = 'o', ms = 0.03)
-#plt.ylim(104, 106)
-plt.ylim(100, 110)
-plt.title(colnames[i])
-plt.xticks(rotation='vertical')
-
-# 8. Reflux pressure Indicator
-i = 6
-y = sorted_df.iloc[:,i]
-plt.plot(x,y, lw = 0, marker = 'o', ms = 0.03)
-#plt.ylim(106, 108)
-plt.ylim(100, 110)
-plt.title(colnames[i])
-plt.xticks(rotation='vertical')
-
-# 9. reboiler chemical dosing
-i = 11
-y = sorted_df.iloc[:,i]
-plt.plot(x,y, lw = 0, marker = 'o', ms = 0.03)
-#plt.ylim(38.50, 39.50)
-plt.ylim(21, 25)
-plt.title(colnames[i])
-plt.xticks(rotation='vertical')
 
 
 
