@@ -49,7 +49,7 @@ for i in range(5):
 ###############################################################################
 # now test on all other data points
 ###############################################################################
-tp = 5*24*60
+tp = '5d'
 col_ind = [0, 1,2,3,4,10]
 df_s = abnormal_df.iloc[:,col_ind]
 df_s = df_s.sort_values(by = 'Unnamed: 0')
@@ -67,6 +67,13 @@ y_max = np.max(encoded_imgs)
 plt.plot(ma_sdf.index, encoded_values[:,0], lw = 0, marker = 'o', ms = 0.03)
 plt.axhline( y = y_min)
 plt.axhline(y = y_max)
+
+
+mean = np.mean(encoded_imgs)
+dist = abs(encoded_values[:,0] - mean)
+plt.plot(ma_sdf.index, dist, lw = 0, marker = 'o', ms = 0.03)
+plt.axhline( y = y_max - mean)
+
 
 
 ###############################################################################
