@@ -46,12 +46,12 @@ scale_dic['abnormal']['FC8228D.PV'] = [8, 11]
 scale_dic['abnormal']['FI8228A.PV'] = [2.5, 4]
 scale_dic['abnormal']['PI8228.PV'] = [160, 260]
 scale_dic['plug']= {}
-scale_dic['plug']['FC8215LD.CPV'] = [60, 115]
-scale_dic['plug']['TI8221A.PV'] = [115, 129]
-scale_dic['plug']['PI8221.PV'] = [160, 260]
-scale_dic['plug']['FC8228D.PV'] = [3.5, 5.5]
-scale_dic['plug']['FI8228A.PV'] = [1.2, 3.2]
-scale_dic['plug']['PI8228.PV'] = [150, 280]
+scale_dic['plug']['FC1215LD.CPV'] = [60, 115]
+scale_dic['plug']['TI1221A.PV'] = [115, 129]
+scale_dic['plug']['PI1221.PV'] = [160, 260]
+scale_dic['plug']['FC1228c.PV'] = [3.5, 5.5]
+scale_dic['plug']['FI1228A.PV'] = [1.2, 3.2]
+scale_dic['plug']['PI1228.PV'] = [150, 280]
 
 
 def plot_ts(i, df, dname, scale_dic, ax):
@@ -202,97 +202,8 @@ for i in cols:
 ###############################################################################
 # Plotting the abnormal trends
 ###############################################################################
-n = 5
-sorted_df = abnormal_df.sort_values(by = 'Unnamed: 0')
-sorted_df.columns
-sorted_df = sorted_df.set_index('Unnamed: 0')
-scaler = StandardScaler()
-np_scaled = scaler.fit_transform(sorted_df)
-scaled_df = pd.DataFrame(np_scaled, columns = sorted_df.columns, index = sorted_df.index)
-
-plt.plot(scaled_df.iloc[:,1], lw = 0, marker = 'o', ms = 0.03)
-m = scaled_df.iloc[:,1].rolling('10d').mean()
-plt.plot(m, lw = 0, marker = 'o', ms = 0.03)
 
 
-ma_abdf = sorted_df.iloc[:,1:].rolling(n*24*60).mean()
-
-
-
-#sorted_df = plug_df.sort_values(by = 'Unnamed: 0')
-scaler = StandardScaler()
-#np_scaled = scaler.fit_transform(sorted_df.iloc[:,1:])
-
-x = sorted_df.iloc[:,0]
-#cols = [1, 2,3,4,9, 10]
-cols = [2]
-for i in cols:
-    colname = sorted_df.columns[i]
-    y = sorted_df.iloc[:,i].values
-    y_scaled = scaler.fit_transform(y.reshape(-1, 1))
-    plt.plot(x,y_scaled, lw = 0, marker = 'o', ms = 0.03) 
-    plt.title(colname)
-    plt.ylim(-2.5,2.5)
-    plt.xticks(rotation='vertical')
-    plt.show()
-
-
-###############################################################################
-# Scaled data and moving average
-###############################################################################
-# Individual Plotting
-ma_abdf = scaled_df.rolling('10d').mean()
-# Plotting one at a time
-cols = [0,1,2,3,8,9]
-for col in cols:
-    colname = scaled_df.columns[col]
-    plt.plot(scaled_df.iloc[:,col], lw = 0, marker = 'o', ms = 0.03)
-    plt.plot(ma_abdf.iloc[:,col], lw = 0, marker = 'o', ms = 0.03)
-    plt.ylim(-2.5,2.5)
-    plt.title(colname)
-    plt.xticks(rotation='vertical')
-    plt.show()    
-        
-
-# Plotting on the same graph
-cols = [0,1,2,3,8,9]
-cols = [1,2,3,8, 0]
-for col in cols:
-    colname = scaled_df.columns[col]
-    plt.plot(ma_abdf.iloc[:,col], lw = 0, marker = 'o', ms = 0.03, label = colname)
-plt.ylim(-2.5,2.5)
-#    plt.title(colname)
-plt.xticks(rotation='vertical')
-plt.legend(numpoints = 1, markerscale = 200)
-plt.show()   
-
-
-
-
-
-ma_abdf = scaled_df.rolling('10d').mean()
-cols = [1,2,3, 8]
-for col in cols:
-    plt.plot(ma_abdf.iloc[:,col], lw = 0, marker = 'o', ms = 0.03)
-plt.ylim(-2.5,2.5)
-plt.xticks(rotation='vertical')
-
-
-
-###############################################################################
-# Understanding the correlations (multiple axis)
-###############################################################################
-x = sorted_df.iloc[:,0]
-f, ax = plt.subplots()
-i = 1
-y = sorted_df.iloc[:,i]
-ax.plot(x,y, lw = 0, marker = 'o', ms = 0.03)
-ax.set_ylim(60, 115)
-ax0 = ax.twinx()
-i = 10
-y = sorted_df.iloc[:,i]
-ax0.plot(x,y, lw = 0, marker = 'o', ms = 0.03, color = 'r')
-#ax0.set_ylim(60, 115)
 
 
 
@@ -345,117 +256,6 @@ plt.xticks(rotation='vertical')
 
 
 
-
-
-sorted_df.head()
-sorted_df.loc[1]
-
-scaler = StandardScaler()
-np_scaled = scaler.fit_transform(sorted_df.iloc[:,1:])
-df_normalized = pd.DataFrame(np_scaled)
-df_normalized
-
-
-for i, col in enumerate(abnormal_df.columns):
-    print(i, col)
-
-
-
-col_no = [2, 4, 9]
-
-
-f, ax = plt.subplots()
-ax = plot_ts(2, sorted_df, ax, col = 'b')
-ax = plot_ts(4, sorted_df, ax, col = 'r')
-ax = plot_ts(9, sorted_df, ax, col = 'g')
-
-
-
-f, ax = plt.subplots()
-x = sorted_df.iloc[5*24*60 - 1:,0]
-y = df_normalized.iloc[:,1].values
-y = moving_average(y, window=5*24*60)
-ax.plot(x,y)
-y = df_normalized.iloc[:,3].values
-y = moving_average(y, window=5*24*60)
-ax.plot(x,y)
-y = df_normalized.iloc[:,8].values
-y = moving_average(y, window=5*24*60)
-ax.plot(x,y)
-ax.set_ylim(-3,3)
-
-
-
-f, ax = plt.subplots()
-x = sorted_df.iloc[5*24*60 - 1:,0]
-y = df_normalized.iloc[:,3].values
-y = moving_average(y, window=5*24*60)
-for i in range(3):
-    xi = [i]
-    yi = y[i]
-    ax.plot(xi,yi, 'r')
-y = df_normalized.iloc[:,1].values
-y = moving_average(y, window=5*24*60)
-for i in range(3):
-    xi = [i]
-    yi = y[i]
-    ax.plot(xi,yi, 'b')
-y = df_normalized.iloc[:,8].values
-y = moving_average(y, window=5*24*60)
-for i in range(3):
-    xi = [i]
-    yi = y[i]
-    ax.plot(xi,yi, 'g')
-ax.set_ylim(-3,3)
-
-
-###############################################################################
-# Step 1: Data Subsetting
-###############################################################################
-loads = [80, 150]
-margin = pd.Timedelta('1 days')
-change_location_ind = get_load_change_index_locations_and_type(abnormal_df, loads)
-valid_dates = get_all_start_end_time_within_specified_load_limit(change_location_ind, margin, abnormal_df)
-load_indices = get_load_indices(valid_dates, abnormal_df)
-indices = load_indices
-
-# Step 2: get the stats
-i = 4
-x, y = get_df_subset(i, load_indices, abnormal_df)
-mean, sd = get_mean_sd(y)
-
-# Step 3: 
-def normalize(x, mean, sd):
-    return (x-mean)/sd
-
-normalized = abnormal_df.iloc[:,4].apply(normalize, args=(mean, sd))
-
-plt.plot(abnormal_df.iloc[:,0], normalized)
-
-levels = normalized.index.levels[0]
-for level in levels:
-    plt.plot(normalized[level])
-
-
-y_mv = moving_average(y, window=24*60)
-
-###############################################################################
-# Step 3: plotting
-###############################################################################
-f, ax = plt.subplots()
-ax = plot_subset_by_boolean_index(i, load_indices, abnormal_df, ax, col = 'b', invert = False)
-ax = plot_subset_by_boolean_index(i, load_indices, abnormal_df, ax, col = 'r', invert = True)
-ax = rotate_x_label(ax, 90)
-ax = set_y_limit(110, 130, ax)
-
-
-
-###############################################################################
-# Step 4: processing the data
-###############################################################################
-y = y.reshape(-1,1)
-scaler = StandardScaler()
-np_scaled = scaler.fit_transform(y)
 
 
 
