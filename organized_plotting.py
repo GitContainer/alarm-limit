@@ -216,13 +216,18 @@ def zoomed_in_plot_selected_period(zoom_dates, df, ax):
     ax = set_x_limit(zoom_dates[0], zoom_dates[1], ax)
     return ax
     
-def show_selected_region_of_a_given_tag(i, indices, y_lim, df, ax):
+def show_selected_region_of_a_given_tag(i, indices, df, ax):
+    x, y = get_df_subset(i, indices, df)
+    
+    mean = np.mean(y)
+    sd = np.std(y)
+    
     tag_name = df.columns[i]
     ax0 = create_twin_axis(ax)
     ax0 = plot_subset_by_boolean_index(i, indices, df, ax0, col = 'm', invert = True)
     ax0 = plot_subset_by_boolean_index(i, indices, df, ax0, col = 'c', invert = False)
     ax0 = set_x_limit(start_date, end_date, ax0)
-    ax0 = set_y_limit(y_lim[0], y_lim[1], ax0)
+    ax0 = set_y_limit(mean - 5*sd, mean + 10*sd, ax0)
     ax0 = add_y_label(tag_name, ax0, col = 'k')
     return ax
 
@@ -264,18 +269,25 @@ dates = ['2014-04-12 00:00:00', '2015-12-07 00:00:00']
 loads = [90, 100]
 margin = pd.Timedelta('5 days')
 zoom_dates = ['2014-10-16 00:00:00', '2014-11-27 00:00:00']
-i = 4
 
 indices = get_indices(dates, loads, margin, abnormal_df)
+
 ax =  color_code_selected_and_unselected_period(indices, abnormal_df) 
-#ax = add_load_and_time_limit(loads, dates, ax)  # Not required for zoomed in plot  
-#ax = zoomed_in_plot_selected_period(zoom_dates, abnormal_df, ax)
-y_lim = 110, 130
-ax = show_selected_region_of_a_given_tag(i, indices, y_lim, abnormal_df, ax)
-ax = alarm_limit_histogram_of_given_tag(i, indices, abnormal_df)
-plot_to_show_histogram_generation(i, indices, dates, abnormal_df)
-f, ax = plt.subplots()
-ax = plot_alarm_limit_on_ts(i, indices, abnormal_df, ax)
+ax = add_load_and_time_limit(loads, dates, ax)
+
+ax =  color_code_selected_and_unselected_period(indices, abnormal_df) 
+zoomed_in_plot_selected_period(zoom_dates, abnormal_df, ax)
+
+_, n = abnormal_df.shape
+for i in range(2, n):
+    title = abnormal_df.columns[i]
+    ax =  color_code_selected_and_unselected_period(indices, abnormal_df) 
+    ax = show_selected_region_of_a_given_tag(i, indices, abnormal_df, ax)
+    ax = alarm_limit_histogram_of_given_tag(i, indices, abnormal_df)
+    plot_to_show_histogram_generation(i, indices, dates, abnormal_df)
+    f, ax = plt.subplots()
+    ax = plot_alarm_limit_on_ts(i, indices, abnormal_df, ax)
+    ax = add_plot_title(ax, title)
 
 
 ###############################################################################
