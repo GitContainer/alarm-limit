@@ -183,8 +183,6 @@ fig, ax = plt.subplots()
 ax = plot_multiple_ma(col_nos, td, abnormal_sc)
 
 
-
-
 ###############################################################################
 # Plotting the normalized data
 ###############################################################################
@@ -209,29 +207,266 @@ for i in cols:
 # determine the normal running period for fault detection algorithm
 ###############################################################################
 abnormal_df.head()
-abnormal_df.loc[3]
+
+abnormal_df.columns
+abnormal_df.iloc[:,0].min()
+abnormal_df.iloc[:,0].max()
+
+abnormal_df[3]
+
+
+###############################################################################
+# dealing with smaller data frame
+###############################################################################
+df = abnormal_df.query('ilevel_0==2')
+
+df.plot(x= 0, y = 1)
+df_1 = df.where(df['FC8215LD.CPV'] > 80)
+
+df.plot(x=0, y = 1)
+df_1.plot(x=0, y = 1)
+
+
+start_date = '2018-09-24 00:00:00'
+end_date = '2018-11-07 00:00:00'
+
+ind1 = abnormal_df.iloc[:,0] > start_date
+ind2 = abnormal_df.iloc[:,0] < end_date
+ind = ind1 & ind2
+
+x = abnormal_df.loc[ind,:].iloc[:,0]
+y = abnormal_df.loc[ind,:].iloc[:,1]
+
+plt.plot(x, y, lw = 0, marker = 'o', ms = 0.03)
+plt.xticks(rotation='vertical')
+plt.title('Chosen')
+
+###############################################################################
+# data subsetting and visualization based on chosen data
+###############################################################################
+abnormal_df.columns
+
+np.sum(ind)
+col_ind = [1,2,3,4,10]
+
+x = abnormal_df.loc[ind,:].iloc[:,0]
+for i in col_ind:
+    y = abnormal_df.loc[ind,:].iloc[:,i]
+    plt.plot(x, y, lw = 0, marker = 'o', ms = 0.03)
+    plt.xticks(rotation='vertical')
+    plt.title(abnormal_df.columns[i])
+    plt.show()
+
+
+###############################################################################
+# Data smoothening before modelling
+###############################################################################
+tp = 5*24*60
+col_ind = [1,2,3,4,10]
+subset_df = abnormal_df.loc[ind].iloc[:,col_ind]
+ma_df = subset_df.rolling(tp).mean()
+ma_df = ma_df.dropna(axis = 0, how = 'any')
+for i in range(5):
+    plt.plot(ma_df.iloc[:,i].values)
+    plt.title(ma_df.columns[i])
+    plt.show()
+    
+###############################################################################
+# autoencoder modelling
+###############################################################################
+    
+    
+###############################################################################
+# alarm setting input data
+###############################################################################
+
+abnormal_df.head()
+i = 1
+x = abnormal_df.iloc[:,0]
+y = abnormal_df.iloc[:,i]
+
+
+plt.plot(x, y, lw = 0, marker = 'o', ms = 0.03)
+
+abnormal_df.loc[2]
+
+###############################################################################
+# dates
+###############################################################################
+start_date = '2018-04-12 00:00:00'
+end_date = '2018-12-07 00:00:00'
+
+loads = [70, 120]
+margin = pd.Timedelta('5 days')
+#start_date = '2014-04-12 00:00:00'
+#end_date = '2015-12-07 00:00:00'
+change_location_ind = get_load_change_index_locations_and_type(abnormal_df, loads)
+valid_dates = get_all_start_end_time_within_specified_load_limit(change_location_ind, margin, abnormal_df)
+load_indices = get_load_indices(valid_dates, abnormal_df)
+date_indices = get_date_indices(start_date, end_date, abnormal_df)
+indices = date_indices & load_indices
+
+i = 1
+x, y = get_df_subset(i, indices, abnormal_df)
+plt.plot(x, y, lw = 0, marker = 'o', ms = 0.03)
+plt.xticks(rotation='vertical')
+
+plt.plot()
 
 
 
+def get_load_change_index_locations_and_type(df, load):
+    '''when the plant is running within the specified load
+    the condition is true, otherwise it is false. Therefore,
+    the difference value of +1 indicates the plant has moved into 
+    the desired load zone. Conversley, the difference value of -1
+    indicates that the plant has moved out of the desired load zone.
+    '''
+    print(load)
+    ind1 = df.iloc[:,1] > load[0]
+    ind2 = df.iloc[:,1] < load[1]
+    ind = ind1 & ind2
+    ind_int = ind*1
+    change_point = ind_int.diff()
+    change_ind = abs(change_point) == 1
+    return change_point.loc[change_ind]
+
+df = abnormal_df.query('ilevel_0==2')
 
 
 
+plt.plot(df.iloc[:,0], df.iloc[:,1])
+
+# flatten the data frame when we want to keep the index
+df.reset_index()
+# another option when we do not want the new column for the index
+df = df.reset_index(drop=True)
+
+loads = [90, 150]
+change_indices = get_load_change_index_locations_and_type(df, loads)
+
+i = 1
+fig, ax = plt.subplots()
+ax = plot_ts(i, df, ax, col = 'b')
+ax = add_change_points(change_indices, df, ax)
 
 
+####
+loads = [90, 110]
+margin = pd.Timedelta('5 days')
+change_location_ind = get_load_change_index_locations_and_type(df, loads)
+valid_dates = get_all_start_end_time_within_specified_load_limit(change_location_ind, margin, df)
+load_indices = get_load_indices(valid_dates, df)
+
+i = 1
+fig, ax = plt.subplots()
+ax = plot_subset_by_boolean_index(i, load_indices, df, ax, col = 'b', invert = False)
+ax = plot_subset_by_boolean_index(i, load_indices, df, ax, col = 'r', invert = True)
+
+###############################################################################
+# flattening and sorting the data frame
+###############################################################################
+
+abnormal_df.head()
+df = abnormal_df.rename(index=str, columns={'Unnamed: 0': 'datetime'})
+df = df.reset_index(drop=True)
+df = df.sort_values(by = ['datetime'])
+
+###############################################################################
+# plotting the time series
+###############################################################################
+def plot_ts(i, df, ax, col = 'b'):
+    x = df.iloc[:,0]
+    y = df.iloc[:,i]
+    ax.plot(x, y, col, lw = 0, marker = 'o', ms = 0.03)
+    return ax
+
+def plot_subset_by_boolean_index(i, indices, df, ax, col = 'b', invert = False):
+    x = df.iloc[:,0]
+    y = df.iloc[:,i].copy(deep = True)
+    if invert:
+        inv_ind = indices
+    else:
+        inv_ind = np.invert(indices)
+    y[inv_ind] = None
+    ax.plot(x, y, col, lw = 0, marker = 'o', ms = 0.03)
+    return ax
 
 
+fig, ax = plt.subplots()
+ax = plot_ts(1, df, ax)
 
 
+###############################################################################
+# getting the required data
+###############################################################################
+loads = [80, 150]
+margin = pd.Timedelta('1 days')
+
+start_date = '2018-04-01 00:00:00'
+end_date = '2019-01-01 00:00:00'
+
+change_location_ind = get_load_change_index_locations_and_type(df, loads)
+valid_dates = get_all_start_end_time_within_specified_load_limit(change_location_ind, margin, df)
+load_indices = get_load_indices(valid_dates, df)
+
+date_indices = get_date_indices(start_date, end_date, df)
+indices = date_indices & load_indices
+
+i = 2
+fig, ax = plt.subplots()
+ax = plot_subset_by_boolean_index(i, load_indices, df, ax, col = 'b', invert = False)
+ax = plot_subset_by_boolean_index(i, load_indices, df, ax, col = 'r', invert = True)
+ax = plot_subset_by_boolean_index(i, indices, df, ax, col = 'g', invert = False)
+
+fig, ax = plt.subplots()
+ax = plot_subset_by_boolean_index(i, indices, df, ax, col = 'g', invert = False)
+ax = plot_subset_by_boolean_index(i, indices, df, ax, col = 'r', invert = True)
+
+###############################################################################
+# time series smoothening
+###############################################################################
+
+df.head()
+df = df.set_index('datetime')
+df_ma = df.rolling('1d', min_periods = 24*60).mean()
+
+i = 2
+fig, ax = plt.subplots()
+plot_ts(i, df_ma, ax, col = 'b')
+plt.plot(df_ma.index, df_ma.iloc[:,0])
+
+plt.plot(df.index, df.iloc[:,1])
+plt.plot(df_ma.index, df_ma.iloc[:,1])
+
+###############################################################################
+# First subsetting based on load then 
+###############################################################################
+
+np.sum(indices)
+df.where(indices, axis = 'columns')
+df_sub = df.where(indices, axis = 1)
+
+###############################################################################
+# simple load test
+###############################################################################
+start_date = '2018-06-01 00:00:00'
+end_date =   '2018-06-10 00:00:00'
+
+test_df = df.loc[ : , ['FC8215LD.CPV', 'PI8221.PV', 'PI8228.PV', 'TI8221A.PV', 'FC8228D.PV']]
+
+ind1 = test_df['FC8215LD.CPV'] > 80
+ind2 = test_df['FC8215LD.CPV'] < 150
+ind = ind1 & ind2
 
 
+test_sub_df = test_df.where(ind, axis = 'columns')
+test_sub_df.plot()
+test_sub_ma = test_sub_df.rolling('1d', min_periods = 24*60).mean()
 
 
-
-
-
-
-
-
+test_sub_df.plot()
+test_sub_ma.plot()
 
 
 
