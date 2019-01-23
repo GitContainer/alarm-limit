@@ -5,6 +5,7 @@ Created on Thu Jan 10 10:11:16 2019
 @author: Ravi Tiwari
 """
 
+from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -467,6 +468,51 @@ test_sub_ma = test_sub_df.rolling('1d', min_periods = 24*60).mean()
 
 test_sub_df.plot()
 test_sub_ma.plot()
+
+without_na = test_sub_ma.dropna(axis = 'index', how = 'any')
+without_na.head()
+
+# try normalization without removing na values
+std_scaler = StandardScaler()
+np_scaled = std_scaler.fit_transform(test_sub_ma)
+
+
+
+###############################################################################
+# normalizing data
+###############################################################################
+std_scaler = StandardScaler()
+np_scaled = std_scaler.fit_transform(without_na)
+df_normalized = pd.DataFrame(np_scaled)
+df_normalized.columns = without_na.columns
+df_normalized
+
+index_name = without_na.index.values
+df_normalized['datetime'] = index_name
+df_normalized.set_index('datetime', drop = True)
+df_normalized.plot()
+
+
+def normalize(x):
+    mean = np.mean(x)
+    sd = np.std(x)
+    y = (x - mean)/sd
+    return y
+
+normalize_df = test_sub_ma.apply(normalize)
+normalize_df.plot()
+
+###############################################################################
+# normalizing manually
+###############################################################################
+
+
+
+test_sub_ma.apply()
+
+x = test_sub_ma.iloc[:,1] 
+
+
 
 
 
