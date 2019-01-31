@@ -170,6 +170,7 @@ def plot_alarm_limit_on_ts(i, indices, df, ax):
     ax.axhline(y=upper, color = 'red', linestyle='--')
     ax.tick_params(axis='x', rotation=90)
     ax.set_ylim(mean - 5*sd, mean + 5*sd)
+    ax.set_title(df.columns[i])
     return ax
 
 
@@ -279,7 +280,7 @@ ax =  color_code_selected_and_unselected_period(indices, abnormal_df)
 zoomed_in_plot_selected_period(zoom_dates, abnormal_df, ax)
 
 _, n = abnormal_df.shape
-for i in range(2, n):
+for i in range(2, 5):
     title = abnormal_df.columns[i]
     ax =  color_code_selected_and_unselected_period(indices, abnormal_df) 
     ax = show_selected_region_of_a_given_tag(i, indices, abnormal_df, ax)
@@ -293,15 +294,94 @@ for i in range(2, n):
 ###############################################################################
 # add histogram to the alarm limit
 ###############################################################################
-
+abnormal_df.head()
         
+def plot_ts_1(i, df, ax, col = 'b'):
+    x = df.iloc[:,0]
+    y = df.iloc[:,i]
+    ax.plot(x, y, col, lw = 0, marker = 'o', ms = 0.03)
+    return ax
+
+i = 1
+f, ax = plt.subplots()
+plot_ts_1(i, abnormal_df, ax, col = 'b')
+plot_ts(i, abnormal_df, ax, col = 'b')
+
+###############################################################################
+# Alarm limit setting tabulated value
+###############################################################################
+dates = ['2014-04-12 00:00:00', '2015-12-07 00:00:00']
+loads = [90, 100]
+margin = pd.Timedelta('5 days')
+zoom_dates = ['2014-10-16 00:00:00', '2014-11-27 00:00:00']
+
+indices = get_indices(dates, loads, margin, abnormal_df)
+
+def get_alarm_setting(i, indices, df):
+    
+    tag_name = df.columns[i]
+    
+    x = df.loc[indices,:].iloc[:,0].values
+    y = df.loc[indices,:].iloc[:,i].values.copy()
+    y = np.array(y, dtype='float')
+    
+    mean = np.mean(y)
+    sd = np.std(y)
+    
+    hh = mean + 3*sd
+    ll = mean - 3*sd
+    
+    hi = mean + 2*sd
+    lo = mean - 2*sd
+    
+    return tag_name, mean, sd, hh, hi, lo, ll
 
 
 
+###############################################################################
+# Save alarm setting in a data frame
+###############################################################################    
+    
+def create_empty_df():
+    col_names = ['tag', 'mean', 'std', 'high high', 'high', 'low', 'low low']
+    df_alarm_setting = pd.DataFrame(columns = col_names)
+    return df_alarm_setting
+
+def create_dictionary(tag, mean, sd, hh, hi, lo, ll):
+    values = {'tag': tag,
+             'low':lo, 
+             'high':hi,
+             'mean':mean,
+             'std':sd,
+             'low low': ll,
+             'high high': hh}
+    return values
 
 
+def add_alarm_values(df_alarm_setting, values):
+    df_alarm_setting = df_alarm_setting.append(values, ignore_index = True)
+    return df_alarm_setting    
 
+def save_alarm_limits_in_df(df):    
+    df_alarm_setting = create_empty_df()
+    _, n = df.shape
+    
+    for i in range(2, n):
+        tag_name, mean, sd, hh, hi, lo, ll = get_alarm_setting(i, indices, df)
+        values = create_dictionary(tag_name, mean, sd, hh, hi, lo, ll)
+        df_alarm_setting = add_alarm_values(df_alarm_setting, values)
+        
+    return df_alarm_setting
+        
+df_alarm_setting = save_alarm_limits_in_df(abnormal_df)
+df_alarm_setting.to_csv('alarm_setting.csv', float_format='%.2f')
 
+###############################################################################
+# plot alarm limit setting
+###############################################################################
+for i in range(1,n):
+    fig, ax = plt.subplots()
+    plot_alarm_limit_on_ts(i, indices, abnormal_df, ax)
 
 
 
