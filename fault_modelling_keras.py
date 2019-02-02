@@ -256,30 +256,21 @@ dist = np.sqrt(np.square(encoded_y - encoded_y_predict))
 plt.plot(dist)
 
 # plotting the health index on the time line
-len(ma_df.index)
-len(dist)
 
-plt.plot(ma_df.index.values, dist, lw = 0, marker = 'o', ms = 0.03)
+f, ax = plt.subplots() 
+ax.plot(df_s.iloc[:,0], lw = 0, color = 'blue', marker = 'o', ms = 0.03, label = 'load')
+ax.set_ylabel(ma_df.columns[0], color='blue')
+ax.tick_params(axis='y', colors='blue')
+ax0 = ax.twinx()
+ax0.plot(ma_df.index.values, dist, color = 'red', lw = 0, marker = 'o', ms = 0.03,
+         label = 'Deviation')
+ax0.set_ylabel('Deviation From Normal Operation', color='red')
+ax0.tick_params(axis='y', colors='red')
+ax0.spines['right'].set_color('red')
+ax0.spines['left'].set_color('blue')
 
-###############################################################################
-# deep autoencoder (result on other data)
-###############################################################################
-df_s.head()
 
-tp = '5d'
-ma = df_s.rolling('5d').mean()
-ma = ma.dropna(axis = 0, how = 'any')
 
-# 6. check the value by plotting
-for i in range(5):
-    ma.plot(y = i, lw = 0, marker = 'o', ms = 0.03)
 
-input_data = ma.iloc[:,[1,2,3,4]].values
-x = scaler.transform(input_data)
-
-encoded_test = encoder.predict(x)
-
-plt.plot(encoded_train)
-plt.plot(encoded_test)
 
 
