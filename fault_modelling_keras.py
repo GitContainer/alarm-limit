@@ -147,27 +147,19 @@ for i in range(4):
     plt.show()
 
 
-
-
-
-
-
-
-
-
-
-
 ###############################################################################
 # Next Autoencoder (working)
+# y is our scaled input data. We want the reduced representation of the 
+# output values
 ###############################################################################
-input_data = ma_sdf.iloc[:,[1,2,3,4]].values
-_, n = input_data.shape
-#input_data = ma_sdf.values
+y
 
 # check the input data
-#plt.plot(input_data[:,0])
-#plt.plot(input_data[:,1])
-
+for i in range(4):    
+    plt.plot(y[:,i])
+    plt.show()
+    
+_, n = y.shape
 # Simple autoencoder
 encoding_dim = 1
 
@@ -187,39 +179,36 @@ decoder = Model(encoded_input, decoder_layer(encoded_input))
 
 autoencoder.compile(optimizer='adam', loss='mse')
 
-# prepare the input data
-scaler = MinMaxScaler()
-x_train = scaler.fit_transform(input_data)
 
-autoencoder.fit(x_train, x_train,
+
+autoencoder.fit(y, y,
                 epochs=20,
                 shuffle=True)
 
-
-encoded_val = encoder.predict(x_train)
+encoded_val = encoder.predict(y)
 decoded_val = decoder.predict(encoded_val)
 
 plt.plot(encoded_val)
 
 for i in range(n):
-    plt.plot(x_train[:,i])
+    plt.plot(y[:,i])
     plt.plot(decoded_val[:,i])
     plt.show()
-
-# whenever there are multiple encoded values then can check how they are doing
-np.corrcoef(encoded_val[:,0], encoded_val[:,1])
 
 
 ###############################################################################
 # deep autoencoder
 ###############################################################################
-input_data = ma_sdf.iloc[:,[1,2,3,4]].values
-_, n = input_data.shape
-#input_data = ma_sdf.values
-
-
+y
+# check the input data
+for i in range(4):    
+    plt.plot(y[:,i])
+    plt.show()
+    
+_, n = y.shape
 # Simple autoencoder
 encoding_dim = 1
+
 
 sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 
@@ -231,7 +220,7 @@ encoded = Dense(1, activation='sigmoid')(encoded)
 
 decoded = Dense(2, activation='sigmoid')(encoded)
 decoded = Dense(3, activation='sigmoid')(decoded)
-decoded = Dense(n, activation='sigmoid')(decoded)
+decoded = Dense(n, activation = 'sigmoid')(decoded)
 
 # autoencoder
 autoencoder = Model(input_val, decoded)
@@ -239,38 +228,38 @@ autoencoder = Model(input_val, decoded)
 # encoder
 encoder = Model(input_val, encoded)
 
-# decoder
-# create a placeholder for an encoded (32-dimensional) input
-encoded_input = Input(shape=(encoding_dim,))
-# retrieve the last layer of the autoencoder model
-decoder_layer = autoencoder.layers[-1]
-# create the decoder model
-#decoder = Model(encoded_input, decoder_layer(encoded_input))
-
 
 autoencoder.compile(optimizer='adam', loss='mse')
 
-# prepare the input data
-scaler = MinMaxScaler()
-x_train = scaler.fit_transform(input_data)
-
-autoencoder.fit(x_train, x_train,
-                epochs=20,
+autoencoder.fit(y, y,
+                epochs=15,
                 shuffle=True)
 
 
-
 # get the encoded and decoded values
-decoded_val = autoencoder.predict(x_train)
+decoded_val = autoencoder.predict(y_all)
+
 for i in range(4):
-    plt.plot(x_train[:,i], label = 'original')
+    plt.plot(y_all[:,i], label = 'original')
     plt.plot(decoded_val[:,i], label = 'decoded')
     plt.legend()
     plt.show()
     
 
-encoded_train = encoder.predict(x_train)
+encoded_y = encoder.predict(y_all)
+encoded_y_predict = encoder.predict(y_all_predict)
 
+plt.plot(encoded_y)
+plt.plot(encoded_y_predict)
+
+dist = np.sqrt(np.square(encoded_y - encoded_y_predict))
+plt.plot(dist)
+
+# plotting the health index on the time line
+len(ma_df.index)
+len(dist)
+
+plt.plot(ma_df.index.values, dist, lw = 0, marker = 'o', ms = 0.03)
 
 ###############################################################################
 # deep autoencoder (result on other data)
