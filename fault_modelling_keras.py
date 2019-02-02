@@ -12,17 +12,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-from keras.layers import Input
-from keras.layers.core import Dense
-from keras.models import Model
 from keras.models import Sequential
-from keras.layers.core import Dense, Activation
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from keras.optimizers import Adam
+from keras.layers.core import Activation
 
 from keras.callbacks import TensorBoard
-from time import time
 from keras import optimizers
 
 
@@ -45,7 +41,26 @@ df_s = df_s.rename(columns = {"Unnamed: 0": "datetime"})
 df_s = df_s.sort_values(by = 'datetime')
 df_s = df_s.set_index('datetime')
 
-# 2. subsetting based on date index
+# 2. get the moving average of the whole data set for training scaler
+tp = '5d'
+ma_df = df_s.rolling('5d').mean()
+ma_df = ma_df.dropna(axis = 0, how = 'any')
+
+for i in range(5):
+    ma_df.plot(y = i, lw = 0, marker = 'o', ms = 0.03)
+
+scaling_data = ma_df.values
+
+scaler = MinMaxScaler()
+scaled_data = scaler.fit_transform(scaling_data)
+
+for i in range(5):
+    plt.plot(scaled_data[:,i])
+    plt.show()
+
+###############################################################################
+# 2. subsetting the data for creating the model
+###############################################################################
 start_date = '2018-05-01'
 end_date = '2018-11-01'
 df_ds = df_s.loc[start_date:end_date]
@@ -72,15 +87,23 @@ for i in range(5):
 ###############################################################################
 # make a model to get all the values from the load
 ###############################################################################    
-input_data =  ma_sdf.iloc[:,0].values 
-input_data = input_data.reshape(-1,1)
-output_data =  ma_sdf.iloc[:,1:].values
+model_data = ma_sdf.values
+scaled_md = scaler.transform(model_data)
 
-n_input = 1
-n_output = 4
+# checked the scaled model data
+for i in range(5):
+    plt.plot(scaled_md[:,i])
+    plt.show()
+
+x = scaled_md[:,0]
+x = x.reshape(-1,1)
+y = scaled_md[:,1:]
+
+_, n_input = x.shape
+_, n_output = y.shape
 
 OPTIMIZER = Adam()
-NB_EPOCH = 50
+NB_EPOCH = 20
 VALIDATION_SPLIT=0.1
 
 
@@ -93,22 +116,46 @@ model.add(Dense(n_output, kernel_initializer="glorot_uniform"))
 model.summary()
 model.compile(loss='mse', optimizer=OPTIMIZER, metrics=['mse'])
 
-tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
-model.fit(input_data, output_data, epochs=NB_EPOCH, validation_split=VALIDATION_SPLIT, 
-                    verbose=1, callbacks=[tensorboard])
+model.fit(x, y, epochs=NB_EPOCH, validation_split=VALIDATION_SPLIT)
 
 ###############################################################################
 # prediction with the trained model
 ###############################################################################
-y_predict = model.predict(input_data)
+y_predict = model.predict(x)
 
 ###############################################################################
 # checking prediction quality using the actual values
 ###############################################################################
-for i in range(4):    
-    plt.plot(y_predict[:,i])
-    plt.plot(output_data[:,i])
+for i in range(4): 
+    plt.plot(y[:,i])
+    plt.plot(y_predict[:,i])    
     plt.show()
+
+###############################################################################
+# Check model prediction on all other data 
+###############################################################################
+scaled_data
+x_all = scaled_data[:,0]
+x_all = x_all.reshape(-1,1)
+y_all = scaled_data[:,1:]
+
+y_all_predict = model.predict(x_all)
+
+for i in range(4): 
+    plt.plot(y_all[:,i])
+    plt.plot(y_all_predict[:,i])    
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
 
 ###############################################################################
 # Next Autoencoder (working)
@@ -222,10 +269,28 @@ for i in range(4):
     plt.show()
     
 
-encoded_value = encoder.predict(x_train)
+encoded_train = encoder.predict(x_train)
 
 
+###############################################################################
+# deep autoencoder (result on other data)
+###############################################################################
+df_s.head()
 
+tp = '5d'
+ma = df_s.rolling('5d').mean()
+ma = ma.dropna(axis = 0, how = 'any')
 
+# 6. check the value by plotting
+for i in range(5):
+    ma.plot(y = i, lw = 0, marker = 'o', ms = 0.03)
+
+input_data = ma.iloc[:,[1,2,3,4]].values
+x = scaler.transform(input_data)
+
+encoded_test = encoder.predict(x)
+
+plt.plot(encoded_train)
+plt.plot(encoded_test)
 
 
