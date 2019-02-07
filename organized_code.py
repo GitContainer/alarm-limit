@@ -5,6 +5,13 @@ Created on Fri Dec 28 09:14:28 2018
 @author: Ravi Tiwari
 """
 
+###############################################################################
+# This code is useful to find alarm limit setting based on statistical properties
+# of the past data. First the mean and standard deviation is calcualted using the 
+# past data. Afterwards the hh, hi, lo, and ll are set to mean + 3*sd, mean + 2*sd,
+# mean - 2*sd, mean - 3*sd
+###############################################################################
+
 import pandas as pd
 import numpy as np
 import os
