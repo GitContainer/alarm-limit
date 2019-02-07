@@ -8,13 +8,7 @@ Created on Fri Dec 28 09:14:28 2018
 import pandas as pd
 import numpy as np
 import os
-import matplotlib.pyplot as plt
-from scipy.signal import correlate
-import scipy.stats as stats
-import seaborn as sns
-from io import StringIO
-from sys import getsizeof
-
+from datetime import datetime
 
 ###############################################################################
 # Set the working directory
@@ -78,9 +72,7 @@ def get_cleaned_and_merged_df(name):
 ###############################################################################
 abnormal_df = pd.read_pickle("./abnormal_df.pkl")
 plug_df = pd.read_pickle("./plug_df.pkl")
-abnormal_df.memory_usage()
-getsizeof(abnormal_df)
-getsizeof(plug_df)
+
 ###############################################################################    
 ###############################################################################
 # data subsetting for alarm limit setting
@@ -92,6 +84,7 @@ def get_load_change_index_locations_and_type(df, load):
     the desired load zone. Conversley, the difference value of -1
     indicates that the plant has moved out of the desired load zone.
     '''
+    print(load)
     ind1 = df.iloc[:,1] > load[0]
     ind2 = df.iloc[:,1] < load[1]
     ind = ind1 & ind2
@@ -100,8 +93,7 @@ def get_load_change_index_locations_and_type(df, load):
     change_ind = abs(change_point) == 1
     return change_point.loc[change_ind]
 
-loads = [90, 100]
-change_indices = get_load_change_index_locations_and_type(abnormal_df, loads)
+
 ###############################################################################
 # Get all the start and end date with margin when the plant is running 
 # within specified load
@@ -152,12 +144,25 @@ def get_load_indices(valid_dates, df):
     return load_indices
         
 def get_date_indices(start_date, end_date, df):
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
     ind1 = df.iloc[:,0] > start_date
     ind2 = df.iloc[:,0] < end_date
     ind = ind1 & ind2 
     return ind
 
-def get_indices(load_indices, date_indices):
+###############################################################################
+# Careful same name function exists in the organized_plotting code
+###############################################################################
+#def get_indices(load_indices, date_indices):
+#    indices = date_indices & load_indices
+#    return indices
+def get_indices(dates, loads, margin, df):
+    start_date, end_date = dates
+    change_location_ind = get_load_change_index_locations_and_type(df, loads)
+    valid_dates = get_all_start_end_time_within_specified_load_limit(change_location_ind, margin, df)
+    load_indices = get_load_indices(valid_dates, df)
+    date_indices = get_date_indices(start_date, end_date, df)
     indices = date_indices & load_indices
     return indices
     
@@ -180,33 +185,109 @@ def get_mean_sd(y):
     sd = np.std(y)
     return mean, sd    
 
-def moving_average(y, window=24*60) :
-    ret = np.cumsum(y, dtype=float)
-    ret[window:] = ret[window:] - ret[:-window]
-    return ret[window - 1:] / window
+def get_alarm_setting(i, indices, df):
+    
+    tag_name = df.columns[i]
+    
+    y = df.loc[indices,:].iloc[:,i].values.copy()
+    y = np.array(y, dtype='float')
+    
+    mean = np.mean(y)
+    sd = np.std(y)
+    
+    hh = mean + 3*sd
+    ll = mean - 3*sd
+    
+    hi = mean + 2*sd
+    lo = mean - 2*sd
+    
+    return tag_name, mean, sd, hh, hi, lo, ll
+
+def create_empty_df():
+    col_names = ['tag', 'mean', 'std', 'high high', 'high', 'low', 'low low']
+    df_alarm_setting = pd.DataFrame(columns = col_names)
+    return df_alarm_setting
+
+def create_dictionary(tag, mean, sd, hh, hi, lo, ll):
+    values = {'tag': tag,
+             'low':lo, 
+             'high':hi,
+             'mean':mean,
+             'std':sd,
+             'low low': ll,
+             'high high': hh}
+    return values
+
+
+def add_alarm_values(df_alarm_setting, values):
+    df_alarm_setting = df_alarm_setting.append(values, ignore_index = True)
+    return df_alarm_setting    
+
+def save_alarm_limits_in_df(df, indices):    
+    df_alarm_setting = create_empty_df()
+    _, n = df.shape
+    
+    for i in range(2, n):
+        tag_name, mean, sd, hh, hi, lo, ll = get_alarm_setting(i, indices, df)
+        values = create_dictionary(tag_name, mean, sd, hh, hi, lo, ll)
+        df_alarm_setting = add_alarm_values(df_alarm_setting, values)
+        
+    return df_alarm_setting
+        
 
 
 ###############################################################################
 #  get the result
 ###############################################################################
-loads = [90, 100]
-margin = pd.Timedelta('5 days')
-start_date = '2014-04-12 00:00:00'
-end_date = '2015-12-07 00:00:00'
-change_indices = get_load_change_index_locations_and_type(abnormal_df, loads)
-valid_dates = get_all_start_end_time_within_specified_load_limit(change_indices, margin, abnormal_df)
-load_indices = get_load_indices(valid_dates, abnormal_df)
-date_indices = get_date_indices(start_date, end_date, abnormal_df)
-indices = get_indices(load_indices, date_indices)
+# alarm setting for abnormal data
 
-i = 4
-x, y = get_df_subset(i, indices, abnormal_df)
-x1, y1 = get_df_subset(i, date_indices, abnormal_df)
-x2, y2 = get_df_subset(i, load_indices, abnormal_df)
-mean, sd = get_mean_sd(y)
-y_mv = moving_average(y, window=24*60)
-plt.plot(x,y)
-plt.plot(x[24*60 - 1:], y_mv)
+start_date = '2014-04-12'
+end_date = '2015-12-07'
+load_range = [90, 100]
+date_range = [start_date, end_date]
+margin = pd.Timedelta('5 days')
+
+indices = get_indices(date_range, load_range, margin, abnormal_df)
+
+abnormal_alarm_setting = save_alarm_limits_in_df(abnormal_df, indices)
+abnormal_alarm_setting.round(2)
+abnormal_alarm_setting.to_csv('abnormal_alarm_setting.csv', float_format='%.2f')
+
+# alarm setting for plug data
+start_date = '2016-07-01'
+end_date = '2017-12-01'
+load_range = [90, 110]
+date_range = [start_date, end_date]
+margin = pd.Timedelta('5 days')
+
+indices = get_indices(date_range, load_range, margin, plug_df)
+
+plug_alarm_setting = save_alarm_limits_in_df(plug_df, indices)
+plug_alarm_setting.round(2)
+plug_alarm_setting.to_csv('plug_alarm_setting.csv', float_format='%.2f')
+
+
+###############################################################################
+# individual result
+###############################################################################
+start_date = '2014-04-12'
+end_date = '2015-12-07'
+load_range = [90, 100]
+date_range = [start_date, end_date]
+margin = pd.Timedelta('5 days')
+
+indices = get_indices(date_range, load_range, margin, abnormal_df)
+tag_name, mean, sd, hh, hi, lo, ll =  get_alarm_setting(4, indices, abnormal_df) 
+    
+
+
+
+
+
+
+
+
+
 
 
 
