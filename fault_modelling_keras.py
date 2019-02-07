@@ -13,12 +13,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from keras.models import Sequential
-from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from keras.optimizers import Adam
 from keras.layers.core import Activation
 
-from keras.callbacks import TensorBoard
 from keras import optimizers
 
 
@@ -28,249 +26,202 @@ from keras import optimizers
 os.chdir('C:\\Users\\40204945\\Documents\\sumitomo')
 os.listdir('.')
 
+###############################################################################
+# Get and preprocess the data. Preprocessing involves
+# 1. keeping only the needed columns
+# 2. creating date based index
+# 3. determining moving average
+###############################################################################
+def create_date_index(df):
+    df_di = df.rename(columns = {"Unnamed: 0": "datetime"})
+    df_di = df_di.sort_values(by = 'datetime')
+    df_di = df_di.set_index('datetime')
+    return df_di
 
-###############################################################################
-# Read and get the moving average
-###############################################################################
+def column_subsetting(df, col_ind):
+    df_s = df.iloc[:,col_ind]
+    return df_s
+
+     
+def moving_average(df, tw = '5d'):
+    ma_df = df.rolling(tw).mean()
+    ma_df = ma_df.dropna(axis = 0, how = 'any')
+    return ma_df
+
+def preprocess_df(df, col_ind, tw):
+    df_di = create_date_index(df)        
+    df_s =  column_subsetting(df_di, col_ind)
+    ma_df = moving_average(df_s, tw = '5d')
+    return ma_df
+
+col_ind = [0, 1, 2, 3, 8]
+tw = '5d'
 abnormal_df = pd.read_pickle("./abnormal_df.pkl")
+ma_df = preprocess_df(abnormal_df, col_ind, tw)
 
-# 1. get the subset and create datetime index
-col_ind = [0, 1,2,3,4,10]
-df_s = abnormal_df.iloc[:,col_ind]
-df_s = df_s.rename(columns = {"Unnamed: 0": "datetime"})
-df_s = df_s.sort_values(by = 'datetime')
-df_s = df_s.set_index('datetime')
+###############################################################################
+# 2. plot the preprocessed data
+###############################################################################
+def plot_df(df):
+    for col in df:
+        plt.plot(df[col], lw = 0, marker = 'o', ms = 0.03, color = 'b')
+        plt.title(col)
+        plt.show()
+    return
+    
+plot_df(ma_df)
 
-# 2. get the moving average of the whole data set for training scaler
-tp = '5d'
-ma_df = df_s.rolling('5d').mean()
-ma_df = ma_df.dropna(axis = 0, how = 'any')
 
-for i in range(5):
-    ma_df.plot(y = i, lw = 0, marker = 'o', ms = 0.03)
+###############################################################################
+# get the reference data for model creation
+###############################################################################
+def get_reference_data(df, date_range, load_range):
+    
+    start_date, end_date =  date_range
+    ll, hl = load_range
+    
+    df_ref = df.loc[start_date:end_date]
+        
+    ind1 = df_ref['FC8215LD.CPV'] > ll
+    ind2 = df_ref['FC8215LD.CPV'] < hl
+    ind = ind1 & ind2
+    
+    df_ref = df_ref.loc[ind,:]
+    return df_ref
 
-scaling_data = ma_df.values
+date_range = ['2018-05-01', '2018-11-01']
+load_range = [90, 105]
+df_ref = get_reference_data(ma_df, date_range, load_range)
+plot_df(df_ref)    
 
+###############################################################################
+# data (all and reference) normalization before model creation
+###############################################################################
 scaler = MinMaxScaler()
-scaled_data = scaler.fit_transform(scaling_data)
+ma_values = ma_df.values
+ma_scaled = scaler.fit_transform(ma_values)
 
-for i in range(5):
-    plt.plot(scaled_data[:,i])
-    plt.show()
-
-###############################################################################
-# 2. subsetting the data for creating the model
-###############################################################################
-start_date = '2018-05-01'
-end_date = '2018-11-01'
-df_ds = df_s.loc[start_date:end_date]
-
-# 3. subsetting based on load
-ind1 = df_ds['FC8215LD.CPV'] > 90
-ind2 = df_ds['FC8215LD.CPV'] < 105
-ind = ind1 & ind2
-
-# 4. get the subsetted dataframe
-df_ds = df_ds.loc[ind,:]
-
-
-# 5. get the moving average
-tp = '5d'
-ma_sdf = df_ds.rolling('5d').mean()
-ma_sdf = ma_sdf.dropna(axis = 0, how = 'any')
-
-# 6. check the value by plotting
-for i in range(5):
-    ma_sdf.plot(y = i, lw = 0, marker = 'o', ms = 0.03)
-
+ref_val = df_ref.values
+ref_scaled = scaler.transform(ref_val)
 
 ###############################################################################
-# make a model to get all the values from the load
-###############################################################################    
-model_data = ma_sdf.values
-scaled_md = scaler.transform(model_data)
-
-# checked the scaled model data
-for i in range(5):
-    plt.plot(scaled_md[:,i])
-    plt.show()
-
-x = scaled_md[:,0]
-x = x.reshape(-1,1)
-y = scaled_md[:,1:]
-
-_, n_input = x.shape
-_, n_output = y.shape
-
-OPTIMIZER = Adam()
-NB_EPOCH = 20
-VALIDATION_SPLIT=0.1
-
-
-model = Sequential()
-model.add(Dense(n_output, input_shape=(n_input,), kernel_initializer="glorot_uniform"))
-model.add(Activation('sigmoid'))
-model.add(Dense(n_output, kernel_initializer="glorot_uniform"))
-model.add(Activation('sigmoid'))
-model.add(Dense(n_output, kernel_initializer="glorot_uniform"))
-model.summary()
-model.compile(loss='mse', optimizer=OPTIMIZER, metrics=['mse'])
-
-model.fit(x, y, epochs=NB_EPOCH, validation_split=VALIDATION_SPLIT)
-
+# create a model for the reference data
 ###############################################################################
-# prediction with the trained model
-###############################################################################
-y_predict = model.predict(x)
-
-###############################################################################
-# checking prediction quality using the actual values
-###############################################################################
-for i in range(4): 
-    plt.plot(y[:,i])
-    plt.plot(y_predict[:,i])    
-    plt.show()
-
-###############################################################################
-# Check model prediction on all other data 
-###############################################################################
-scaled_data
-x_all = scaled_data[:,0]
-x_all = x_all.reshape(-1,1)
-y_all = scaled_data[:,1:]
-
-y_all_predict = model.predict(x_all)
-
-for i in range(4): 
-    plt.plot(y_all[:,i])
-    plt.plot(y_all_predict[:,i])    
-    plt.show()
-
-
-###############################################################################
-# Next Autoencoder (working)
-# y is our scaled input data. We want the reduced representation of the 
-# output values
-###############################################################################
-y
-
-# check the input data
-for i in range(4):    
-    plt.plot(y[:,i])
-    plt.show()
+def get_operation_model(ref_data):
     
-_, n = y.shape
-# Simple autoencoder
-encoding_dim = 1
+    x = ref_data[:,0]
+    x = x.reshape(-1,1)
+    y = ref_data[:,1:]
+    
+    _, n_input = x.shape
+    _, n_output = y.shape
+       
+    OPTIMIZER = Adam()
+    NB_EPOCH = 15
+    VALIDATION_SPLIT=0.1
+    
+    
+    model = Sequential()
+    model.add(Dense(n_output, input_shape=(n_input,), kernel_initializer="glorot_uniform"))
+    model.add(Activation('sigmoid'))
+    model.add(Dense(n_output, kernel_initializer="glorot_uniform"))
+    model.add(Activation('sigmoid'))
+    model.add(Dense(n_output, kernel_initializer="glorot_uniform"))
+    model.summary()
+    model.compile(loss='mse', optimizer=OPTIMIZER, metrics=['mse'])
+    
+    model.fit(x, y, epochs=NB_EPOCH, validation_split=VALIDATION_SPLIT)
+    
+    return model
 
-input_val = Input(shape=(n,))
-# "encoded" is the encoded representation of the input
-encoded = Dense(encoding_dim, activation='sigmoid')(input_val)
-# "decoded" is the lossy reconstruction of the input
-decoded = Dense(n, activation='sigmoid')(encoded)
 
-# this model maps an input to its reconstruction
-autoencoder = Model(input_val, decoded)
-encoder = Model(input_val, encoded)
+op_model = get_operation_model(ref_scaled)
 
-encoded_input = Input(shape=(encoding_dim,))
-decoder_layer = autoencoder.layers[-1]
-decoder = Model(encoded_input, decoder_layer(encoded_input))
+###############################################################################
+# prediction based on the operation model
+###############################################################################
+x_ref = ref_scaled[:,0]
+x_ref = x_ref.reshape(-1,1)
+y_ref = ref_scaled[:,1:]
 
-autoencoder.compile(optimizer='adam', loss='mse')
+y_ref_predicted = op_model.predict(x_ref)
 
-
-
-autoencoder.fit(y, y,
-                epochs=20,
-                shuffle=True)
-
-encoded_val = encoder.predict(y)
-decoded_val = decoder.predict(encoded_val)
-
-plt.plot(encoded_val)
-
+_, n = y_ref_predicted.shape
 for i in range(n):
-    plt.plot(y[:,i])
-    plt.plot(decoded_val[:,i])
-    plt.show()
-
-
-###############################################################################
-# deep autoencoder
-###############################################################################
-y
-# check the input data
-for i in range(4):    
-    plt.plot(y[:,i])
-    plt.show()
-    
-_, n = y.shape
-# Simple autoencoder
-encoding_dim = 1
-
-
-sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-
-input_val = Input(shape=(n,))
-encoded = Dense(3, activation='sigmoid')(input_val)
-encoded = Dense(2, activation='sigmoid')(encoded)
-
-encoded = Dense(1, activation='sigmoid')(encoded)
-
-decoded = Dense(2, activation='sigmoid')(encoded)
-decoded = Dense(3, activation='sigmoid')(decoded)
-decoded = Dense(n, activation = 'sigmoid')(decoded)
-
-# autoencoder
-autoencoder = Model(input_val, decoded)
-
-# encoder
-encoder = Model(input_val, encoded)
-
-
-autoencoder.compile(optimizer='adam', loss='mse')
-
-autoencoder.fit(y, y,
-                epochs=15,
-                shuffle=True)
-
-
-# get the encoded and decoded values
-decoded_val = autoencoder.predict(y_all)
-
-for i in range(4):
-    plt.plot(y_all[:,i], label = 'original')
-    plt.plot(decoded_val[:,i], label = 'decoded')
+    plt.plot(y_ref[:,i], label = 'Observed')
+    plt.plot(y_ref_predicted[:,i], label = 'Predicted')
     plt.legend()
     plt.show()
+
+###############################################################################
+# Autoencoder model for reducing the dimensionality
+###############################################################################
+def get_autoencoder_model(ref_scaled, encoding_dim):
     
+    y = ref_scaled[:,1:]
+    _, n = y.shape
+    
+    input_val = Input(shape=(n,))
+    encoded = Dense(3, activation='sigmoid')(input_val)
+    encoded = Dense(2, activation='sigmoid')(encoded)
+    
+    encoded = Dense(1, activation='sigmoid')(encoded)
+    
+    decoded = Dense(2, activation='sigmoid')(encoded)
+    decoded = Dense(3, activation='sigmoid')(decoded)
+    decoded = Dense(n, activation = 'sigmoid')(decoded)
+    
+    # autoencoder
+    autoencoder = Model(input_val, decoded)
+    
+    # encoder
+    encoder = Model(input_val, encoded)
+        
+    autoencoder.compile(optimizer='adam', loss='mse')
+    
+    autoencoder.fit(y, y,
+                    epochs=15,
+                    shuffle=True)
+    
+    return autoencoder, encoder
 
-encoded_y = encoder.predict(y_all)
-encoded_y_predict = encoder.predict(y_all_predict)
 
-plt.plot(encoded_y)
-plt.plot(encoded_y_predict)
+autoencoder, encoder = get_autoencoder_model(ref_scaled, 1)
 
-dist = np.sqrt(np.square(encoded_y - encoded_y_predict))
-plt.plot(dist)
+###############################################################################
+# checking encoder, decoder prediction
+###############################################################################
+def get_abnormality_index(ma_scaled, op_model, encoder):
+    
+    x = ma_scaled[:,0]
+    x = x.reshape(-1,1)
+    y = ma_scaled[:,1:]
+    
+    ypred = op_model.predict(x)
+    
+    encoded_y = encoder.predict(y)
+    encoded_ypred = encoder.predict(ypred)
+        
+    dist = np.sqrt(np.square(encoded_y - encoded_ypred))
+    return dist
 
-# plotting the health index on the time line
+ab_index = get_abnormality_index(ma_scaled, op_model, encoder)
 
-f, ax = plt.subplots() 
-ax.plot(df_s.iloc[:,0], lw = 0, color = 'blue', marker = 'o', ms = 0.03, label = 'load')
-ax.set_ylabel(ma_df.columns[0], color='blue')
-ax.tick_params(axis='y', colors='blue')
-ax0 = ax.twinx()
-ax0.plot(ma_df.index.values, dist, color = 'red', lw = 0, marker = 'o', ms = 0.03,
-         label = 'Deviation')
-ax0.set_ylabel('Deviation From Normal Operation', color='red')
-ax0.tick_params(axis='y', colors='red')
-ax0.spines['right'].set_color('red')
-ax0.spines['left'].set_color('blue')
+###############################################################################
+# Plotting abnormality index
+###############################################################################
+def plot_abnormality_index(ma_df, ab_index):       
+    f, ax = plt.subplots() 
+    ax.plot(ma_df.iloc[:,0], lw = 0, color = 'blue', marker = 'o', ms = 0.03, label = 'load')
+    ax.set_ylabel(ma_df.columns[0], color='blue')
+    ax.tick_params(axis='y', colors='blue')
+    ax0 = ax.twinx()
+    ax0.plot(ma_df.index.values, ab_index, color = 'red', lw = 0, marker = 'o', ms = 0.03,
+             label = 'Deviation')
+    ax0.set_ylabel('Deviation From Normal Operation', color='red')
+    ax0.tick_params(axis='y', colors='red')
+    ax0.spines['right'].set_color('red')
+    ax0.spines['left'].set_color('blue')
+    return ax
 
-
-
-
-
-
+ax = plot_abnormality_index(ma_df, ab_index)
