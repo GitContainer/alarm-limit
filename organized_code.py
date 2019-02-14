@@ -20,19 +20,32 @@ from datetime import datetime
 ###############################################################################
 # Set the working directory
 ###############################################################################
+# 1.laptop
 os.chdir('C:\\Users\\40204945\\Documents\\sumitomo')
 os.listdir('.')
+
+# 2.workstation
+os.chdir('D:\\sumitomo\\code\\alarm-limit')
+os.listdir('.')
+
 
 ###############################################################################
 ###############################################################################
 # Read the data
 ###############################################################################
-def read_xl_data(i, name):    
+def read_xl_data(i, name, workstation = True):    
     col_no = range(5,18)
-    if name == 'plug_data':
-        fname = 'data\\IOT\\shared on 13.12.18\\SMM1 T-1220 Plugging.xlsx'
-    if name == 'abnormality_data':
-        fname = 'data\\IOT\\shared on 13.12.18\\Abnormality Detection May17 _ Jan18.xlsx'
+    
+    if workstation:
+        if name == 'plug_data':
+            fname = 'D:\\sumitomo\data\\New folder\\SMM1 T-1220 Plugging.xlsx'
+        if name == 'abnormality_data':
+            fname = 'D:\\sumitomo\data\\New folder\\SMM3 T-8220 Plugging.xlsx'
+    else:
+        if name == 'plug_data':
+            fname = 'data\\IOT\\shared on 13.12.18\\SMM3 T-1220 Plugging.xlsx'
+        if name == 'abnormality_data':
+            fname = 'data\\IOT\\shared on 13.12.18\\Abnormality Detection May17 _ Jan18.xlsx'
         
     df = pd.read_excel(fname, usecols = col_no, skiprows = 3, sheet_name=i)    
     return df
@@ -64,8 +77,8 @@ def get_cleaned_and_merged_df(name):
 ###############################################################################
 # Step 1: Read the data
 ###############################################################################
-#abnormal_df = get_cleaned_and_merged_df('abnormality_data')
-#plug_df = get_cleaned_and_merged_df('plug_data')
+abnormal_df = get_cleaned_and_merged_df('abnormality_data')
+plug_df = get_cleaned_and_merged_df('plug_data')
 
 
 ###############################################################################
