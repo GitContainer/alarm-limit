@@ -7,6 +7,7 @@ Created on Thu Feb 14 17:03:38 2019
 
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # 2.workstation
 os.chdir('D:\\sumitomo\\code\\alarm-limit')
@@ -91,14 +92,30 @@ for column in df.columns:
     
 # find all the unnamed columns in the data
 
-
-
 for column in df.columns:
     if 'Unnamed' in column:
         start_col = column
 
 df = df.loc[:,start_col:]
 
+df.tail()
+
+# removing the empty rows
+ind = df.iloc[:,0] == ' '
+df = df.loc[~ind,:]
+
+# creating date index
+df_di = df.rename(columns = {"Unnamed: 3": "datetime"})
+df_di = df_di.sort_values(by = 'datetime')
+df_di = df_di.set_index('datetime')
+
+
+# plot to see the variables
+_, n = df_di.shape
+for i in range(n):
+    df_di.plot(y = i)
+    plt.show()
+    
 
 
 
