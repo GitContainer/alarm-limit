@@ -117,6 +117,58 @@ for i in range(n):
     plt.show()
     
 
+###############################################################################
+# reading and visualizing the files programmatically
+###############################################################################
+# opening the graphics files
+
+folder = 'D:\\sumitomo\data'
+fnames = os.listdir(folder)
+
+fname = [s for s in fnames if 'graphics' in s]
+
+full_path = os.path.join(folder, fname[0])
+os.startfile(full_path)
+
+
+###############################################################################
+# next organizing the data (equipment wise)
+###############################################################################
+folder1 = 'D:\\sumitomo\data'
+fnames1 = os.listdir(folder)
+
+folder2 = 'D:\\sumitomo\\data\\New folder'
+fnames2 = os.listdir(folder)
+
+cat_dict = {}
+for fname in fnames1:
+    cat = fname.split()[1]
+    try:
+        cat_dict[cat].append(fname)
+    except:
+        cat_dict[cat] = []
+        cat_dict[cat].append(fname)
+        
+for key in cat_dict.keys():
+    print(key)
+    print(cat_dict[key])        
+
+cat_dict['T-1220']   
+ 
+
+    
+   
+
+fnames1
+
+
+
+
+
+
+
+
+
 
 
 
