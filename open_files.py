@@ -126,56 +126,62 @@ folder = 'D:\\sumitomo\data'
 open_all_files_in_a_folder(folder)
 
 
+###############################################################################
+# reading files into python
+###############################################################################
+cat_dict1
+cat_dict2
 
-###############################################################################
-# reading the files one by one
-###############################################################################
 folder = 'D:\\sumitomo\data'
 fname = 'SMM1 T-1330 temp data1.xlsx'
+fname = 'SMM1 T-1220 normal data1.xlsx'
+fname = 'SMM1 T-1220 Plugging (with Temp profile).xlsx'
 full_path = os.path.join(folder, fname)
 os.startfile(full_path)
 
 xl = pd.ExcelFile(full_path)
 xl.sheet_names 
-df = xl.parse('Sheet1')
+df = xl.parse(xl.sheet_names[0])
 df.columns
 
-for column in df.columns:
-    print(df[column].head())
-    
-    
-# find all the unnamed columns in the data
+start_row = 2
+cols = 'F:W'
 
-for column in df.columns:
-    if 'Unnamed' in column:
-        start_col = column
+# description
+description = xl.parse(xl.sheet_names[0], usecols = cols, 
+              skiprows = start_row -1, nrows = 1, header = None)
 
-df = df.loc[:,start_col:]
+# units
+units =  xl.parse(xl.sheet_names[0], usecols = cols, 
+              skiprows = start_row, nrows = 1, header = None)
 
-df.tail()
+# values
+df = xl.parse(xl.sheet_names[0], usecols = cols, skiprows = start_row + 1)
 
-# removing the empty rows
-ind = df.iloc[:,0] == ' '
-df = df.loc[~ind,:]
+# reindexing the data frame
+df = df.rename(columns = {df.columns[0]: "datetime"})
+df = df.set_index('datetime')
 
-# creating date index
-df_di = df.rename(columns = {"Unnamed: 3": "datetime"})
-df_di = df_di.sort_values(by = 'datetime')
-df_di = df_di.set_index('datetime')
+# remove rows containing non-numeric data
+_, n = df.shape
+for i in range(n):
+    df.iloc[:,i] = pd.to_numeric(df.iloc[:,i], errors='coerce')
+    print(df.iloc[:,i])
 
+df = df.dropna(axis = 0, how = 'any')
 
 # plot to see the variables
-_, n = df_di.shape
+_, n = df.shape
 for i in range(n):
-    df_di.plot(y = i)
+    df.plot(y = i)
     plt.show()
-    
+
+
 
 ###############################################################################
 # reading and visualizing the files programmatically
 ###############################################################################
 # opening the graphics files
-
 folder = 'D:\\sumitomo\data'
 fnames = os.listdir(folder)
 
