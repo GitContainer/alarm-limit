@@ -85,7 +85,6 @@ def open_a_single_file(fname, folder):
     return
 
 fname = 'SMM1 T-1330 temp data1.xlsx' 
-
 open_a_single_file(fname, folder1)
 
 ###############################################################################
@@ -136,45 +135,97 @@ folder = 'D:\\sumitomo\data'
 fname = 'SMM1 T-1330 temp data1.xlsx'
 fname = 'SMM1 T-1220 normal data1.xlsx'
 fname = 'SMM1 T-1220 Plugging (with Temp profile).xlsx'
-full_path = os.path.join(folder, fname)
-os.startfile(full_path)
 
-xl = pd.ExcelFile(full_path)
-xl.sheet_names 
-df = xl.parse(xl.sheet_names[0])
-df.columns
+###############################################################################
+# open file for inspection
+###############################################################################
+folder = 'D:\\sumitomo\data'
+fname = 'SMM1 T-1330 temp data1.xlsx'
+open_a_single_file(fname, folder)
 
-start_row = 2
-cols = 'F:W'
 
-# description
-description = xl.parse(xl.sheet_names[0], usecols = cols, 
-              skiprows = start_row -1, nrows = 1, header = None)
+###############################################################################
+# read the file into excel
+###############################################################################
+def read_excel_file(folder, fname, skip_row, cols):
+    full_path = os.path.join(folder, fname)
+    xl = pd.ExcelFile(full_path)
+    for sheet in xl.sheet_names:
+        if 'Graphics' in sheet:
+            continue
+                    
+        df = xl.parse(sheet, usecols = cols, skiprows = skip_row)
+        yield(df)
 
-# units
-units =  xl.parse(xl.sheet_names[0], usecols = cols, 
-              skiprows = start_row, nrows = 1, header = None)
 
-# values
-df = xl.parse(xl.sheet_names[0], usecols = cols, skiprows = start_row + 1)
+def read_all_sheets(folder, fname, skip_row, cols):
+    
+    df_seq = read_excel_file(folder, fname, skip_row, cols)
+    
+    for df in df_seq:
+        try:
+            df_final = df_final.append(df)
+        except:
+            df_final = df
+    return df_final
+    
+def create_date_index(df):
+    df = df.rename(columns = {df.columns[0]: "datetime"})
+    df = df.set_index('datetime')
+    return df
 
-# reindexing the data frame
-df = df.rename(columns = {df.columns[0]: "datetime"})
-df = df.set_index('datetime')
+def remove_non_numeric_data(df):
+    _, n = df.shape
+    for i in range(n):
+        df.iloc[:,i] = pd.to_numeric(df.iloc[:,i], errors='coerce')
+    
+    df = df.dropna(axis = 0, how = 'any')
+    return df
 
-# remove rows containing non-numeric data
-_, n = df.shape
-for i in range(n):
-    df.iloc[:,i] = pd.to_numeric(df.iloc[:,i], errors='coerce')
-    print(df.iloc[:,i])
 
-df = df.dropna(axis = 0, how = 'any')
+                
+folder = 'D:\\sumitomo\data'
+# single sheet
+skip_row = 1
+cols = 'D:Q'
+fname = 'SMM1 T-1330 temp data1.xlsx'  
+df = read_all_sheets(folder, fname, skip_row, cols)
 
+# multiple sheet
+skip_row = 3
+cols = 'F:R'
+fname = 'SMM1 T-1220 Plugging.xlsx'
+df = read_all_sheets(folder, fname, skip_row, cols)
+        
+        
+###############################################################################
+# Plot to see all the variables
+###############################################################################
 # plot to see the variables
 _, n = df.shape
 for i in range(n):
     df.plot(y = i)
     plt.show()
+
+
+###############################################################################
+# reading individual lines of a data frame
+###############################################################################
+skip_row = 1
+cols = 'G:R'
+folder = 'D:\\sumitomo\data'
+fname = 'SMM1 T-1220 Plugging.xlsx'
+full_path = os.path.join(folder, fname)
+
+# check file visually
+open_a_single_file(fname, folder)  # check the file
+
+# read individual lines
+description = pd.read_excel(full_path, sheet_name = 0, usecols = cols, skiprows = skip_row, nrows = 1,
+                     header = None)
+
+unit = pd.read_excel(full_path, sheet_name = 0, usecols = cols, skiprows = skip_row + 1, nrows = 1,
+                     header = None)
 
 
 
