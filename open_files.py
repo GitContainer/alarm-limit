@@ -182,21 +182,25 @@ def remove_non_numeric_data(df):
     df = df.dropna(axis = 0, how = 'any')
     return df
 
-
-                
+def get_cleaned_df(folder, fname, skip_row, cols):
+    df = read_all_sheets(folder, fname, skip_row, cols)
+    df = create_date_index(df)
+    df = remove_non_numeric_data(df)
+    return df
+    
+                    
 folder = 'D:\\sumitomo\data'
 # single sheet
 skip_row = 1
 cols = 'D:Q'
 fname = 'SMM1 T-1330 temp data1.xlsx'  
-df = read_all_sheets(folder, fname, skip_row, cols)
+df = get_cleaned_df(folder, fname, skip_row, cols) 
 
 # multiple sheet
 skip_row = 3
 cols = 'F:R'
 fname = 'SMM1 T-1220 Plugging.xlsx'
-df = read_all_sheets(folder, fname, skip_row, cols)
-        
+df = get_cleaned_df(folder, fname, skip_row, cols)     
         
 ###############################################################################
 # Plot to see all the variables
