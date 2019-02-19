@@ -8,6 +8,8 @@ Created on Thu Feb 14 17:03:38 2019
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import time
+from functools import reduce
 
 ###############################################################################
 # Set up the working directory
@@ -190,6 +192,77 @@ def get_cleaned_df(folder, fname, skip_row, cols):
     
                     
 folder = 'D:\\sumitomo\data'
+
+###############################################################################
+# Reading and saving files one by one
+###############################################################################
+def print_tank_name_and_associated_files(cat_dict):
+    for key in cat_dict.keys():
+        if 'T' in key:
+            print(key)
+            print(cat_dict[key])
+            print('\n')
+
+print_tank_name_and_associated_files(cat_dict1)
+
+###############################################################################
+# Opening and loading files for a given tank
+###############################################################################
+folder = 'D:\\sumitomo\data'
+
+def load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict):
+    df = []
+    for fname in cat_dict[tank_name]:
+        open_a_single_file(fname, folder)
+        df_i = get_cleaned_df(folder, fname, skip_row, cols)
+        df.append(df_i)
+    return df
+
+
+###############################################################################
+# Tank 'T-1330'
+###############################################################################
+tank_name = 'T-1330'
+skip_row = 1
+cols = 'D:Q'
+
+t_1330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1) 
+
+# data inspection
+t_1330[0].columns
+t_1330[1].columns 
+t_1330[0].index
+t_1330[1].index 
+ 
+# putting the data in a singel data frame
+df_1330 = pd.concat(t_1330)
+
+# pickle the file for easier retrieval
+df_1330.to_pickle("./df_1330.pkl")  
+
+# retrieve the pickled file
+unpickled_df_1330 = pd.read_pickle("./df_1330.pkl")  
+ 
+   
+###############################################################################
+# Tanks 'T-1220'
+###############################################################################
+tank_name = 'T-1220'
+skip_row = 3
+cols = 'F:R'
+
+time_start = time.time()
+t_1220 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1)
+time_end = time.time()
+time_elasped = time_end - time_start
+
+for i in range(len(t_1220)):
+    print(t_1220[i].columns)
+for i in range(len(t_1220)):    
+    print(t_1220[i].index)
+
+
+
 # single sheet
 skip_row = 1
 cols = 'D:Q'
@@ -197,10 +270,13 @@ fname = 'SMM1 T-1330 temp data1.xlsx'
 df = get_cleaned_df(folder, fname, skip_row, cols) 
 
 # multiple sheet
+start_time = time.time()
 skip_row = 3
 cols = 'F:R'
 fname = 'SMM1 T-1220 Plugging.xlsx'
-df = get_cleaned_df(folder, fname, skip_row, cols)     
+df = get_cleaned_df(folder, fname, skip_row, cols)
+end_time = time.time()
+time_elasped = end_time - start_time  
         
 ###############################################################################
 # Plot to see all the variables
