@@ -160,16 +160,41 @@ def read_excel_file(folder, fname, skip_row, cols):
         yield(df)
 
 
+def remove_duplicate_columns(df):
+    colnames = df.columns.values
+    new_colnames = []
+    
+    for col in colnames:
+        new_colnames.append(col.upper)
+        
+    df.columns = new_colnames
+    df = df.loc[:, ~df.columns.duplicated()]
+    return df
+
+
+
 def read_all_sheets(folder, fname, skip_row, cols):
     
     df_seq = read_excel_file(folder, fname, skip_row, cols)
     
     for df in df_seq:
+        df = remove_duplicate_columns(df)
         try:
             df_final = df_final.append(df)
         except:
             df_final = df
     return df_final
+
+#def read_all_sheets(folder, fname, skip_row, cols):
+#    
+#    df_seq = read_excel_file(folder, fname, skip_row, cols)
+#    
+#    for df in df_seq:
+#        try:
+#            df_final = df_final.append(df)
+#        except:
+#            df_final = df
+#    return df_final
     
 def create_date_index(df):
     df = df.rename(columns = {df.columns[0]: "datetime"})
@@ -353,7 +378,14 @@ tank_name = 'T-8220'
 skip_row = [3, 2]    # check these values
 cols = ['F:Y', 'E:S']  # check these values
 
-fname = cat_dict1[tank_name][0]
+fname = cat_dict1[tank_name][1]
+
+time_start = time.time()
+t_8220 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder)
+time_end = time.time()
+time_elasped = time_end - time_start
+
+
 
 
 df_seq = read_excel_file(folder, fname, skip_row[0], cols[0])
@@ -379,6 +411,14 @@ col2_val = col2_val.dropna(how='any')
 plt.plot(col1_val)
 plt.plot(col2_val)
 
+
+
+
+    
+
+
+
+
 ###############################################################################
 # Column Renaming
 ###############################################################################
@@ -391,7 +431,6 @@ for item in col1:
 df1.columns = new_colnames
 # Remove the duplicate columns
 df1 = df1.loc[:,~df1.columns.duplicated()]
-
 
 
 ###############################################################################
