@@ -210,21 +210,43 @@ print_tank_name_and_associated_files(cat_dict1)
 ###############################################################################
 folder = 'D:\\sumitomo\data'
 
-def load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict):
+#def load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict):
+#    df = []
+#    for fname in cat_dict[tank_name]:
+#        open_a_single_file(fname, folder)
+#        df_i = get_cleaned_df(folder, fname, skip_row, cols)
+#        df.append(df_i)
+#    return df
+#
+
+def load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict, folder):
     df = []
-    for fname in cat_dict[tank_name]:
+    for i, fname in enumerate(cat_dict1[tank_name]):
+        if 'Plugging.xlsx' in fname:
+            continue
+        print(fname)
         open_a_single_file(fname, folder)
-        df_i = get_cleaned_df(folder, fname, skip_row, cols)
+        try:
+            df_i = get_cleaned_df(folder, fname, skip_row[i], cols[i])
+            df_i = get_cleaned_df(folder, fname, skip_row[i], cols[i])
+        except:
+            df_i = get_cleaned_df(folder, fname, skip_row, cols)
+            df_i = get_cleaned_df(folder, fname, skip_row, cols)
+        
         df.append(df_i)
     return df
-
+    
 
 ###############################################################################
 # Tank 'T-1330'
 ###############################################################################
+folder = 'D:\\sumitomo\\data'
 tank_name = 'T-1330'
+fname = cat_dict1[tank_name][0]
 skip_row = 1
 cols = 'D:Q'
+
+open_a_single_file(fname, folder)
 
 t_1330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1) 
 
@@ -243,40 +265,141 @@ df_1330.to_pickle("./df_1330.pkl")
 # retrieve the pickled file
 unpickled_df_1330 = pd.read_pickle("./df_1330.pkl")  
  
-   
+
+
+###############################################################################
+# Tank 'T-8320'
+###############################################################################
+folder = 'D:\\sumitomo\\data'
+tank_name = 'T-8320'
+fname = cat_dict1[tank_name][1]
+skip_row = 1
+cols = 'C:O'
+
+open_a_single_file(fname, folder)
+t_8320 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1) 
+
+# data inspection
+t_8320[0].columns
+t_8320[1].columns 
+t_8320[0].index
+t_8320[1].index 
+ 
+# putting the data in a single data frame
+df_8320 = pd.concat(t_8320)
+
+# pickle the file for easier retrieval
+df_8320.to_pickle("./df_8320.pkl")  
+
+# retrieve the pickled file
+unpickled_df_8320 = pd.read_pickle("./df_8320.pkl")  
+ 
+###############################################################################
+# Tank 'T-8330'
+###############################################################################
+folder = 'D:\\sumitomo\\data'
+tank_name = 'T-8330'
+fname = cat_dict1[tank_name][0]
+skip_row = 1
+cols = 'D:Q'
+
+open_a_single_file(fname, folder)
+t_8330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1) 
+
+# data inspection
+t_8330[0].columns
+t_8330[1].columns 
+t_8330[0].index
+t_8330[1].index 
+ 
+# putting the data in a single data frame
+df_8330 = pd.concat(t_8330)
+
+# pickle the file for easier retrieval
+df_8330.to_pickle("./df_8330.pkl")  
+
+# retrieve the pickled file
+unpickled_df_8330 = pd.read_pickle("./df_8330.pkl") 
+  
 ###############################################################################
 # Tanks 'T-1220'
 ###############################################################################
+folder = 'D:\\sumitomo\\data'
 tank_name = 'T-1220'
-skip_row = 3
-cols = 'F:R'
+skip_row = [2, 3]
+cols = ['F:T', 'F:W']
 
+cat_dict1[tank_name]
+    
 time_start = time.time()
-t_1220 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1)
+t_1220 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder)
 time_end = time.time()
 time_elasped = time_end - time_start
 
-for i in range(len(t_1220)):
-    print(t_1220[i].columns)
-for i in range(len(t_1220)):    
-    print(t_1220[i].index)
+
+# pickle the file for easier retrieval
+t_1220[0].to_pickle("./df_1220_nr.pkl")
+t_1220[1].to_pickle("./df_1220_pg.pkl")  
+
+# retrieve the pickled file
+df_1220_nr = pd.read_pickle("./df_1220_nr.pkl") 
+df_1220_pg = pd.read_pickle("./df_1220_pg.pkl")
+ 
+###############################################################################
+# Tanks 'T-8220'
+###############################################################################
+folder = 'D:\\sumitomo\\data'
+tank_name = 'T-8220'
+skip_row = [3, 2]    # check these values
+cols = ['F:Y', 'E:S']  # check these values
+
+fname = cat_dict1[tank_name][0]
+
+
+df_seq = read_excel_file(folder, fname, skip_row[0], cols[0])
+
+# read all the sheets
+df1 = next(df_seq)
+df2 = next(df_seq)
+df3 = next(df_seq)
+
+# find out which columns are missing
+col1 = set(df1.columns.values)
+col2 = set(df2.columns.values)
+col1 - col2
+
+# remove the strings
+col1_val = pd.to_numeric(df1['TI8221A.pv'], errors='coerce')
+col2_val = pd.to_numeric(df1['TI8221A.pv'], errors='coerce')
+
+col1_val = col1_val.dropna(how='any')
+col2_val = col2_val.dropna(how='any')
+
+# checking if the values are indeed duplicated
+plt.plot(col1_val)
+plt.plot(col2_val)
+
+###############################################################################
+# Column Renaming
+###############################################################################
+col1 = df1.columns.values 
+new_colnames = []
+for item in col1:
+    print(item.upper())
+    new_colnames.append(item.upper())
+
+df1.columns = new_colnames
+# Remove the duplicate columns
+df1 = df1.loc[:,~df1.columns.duplicated()]
 
 
 
-# single sheet
-skip_row = 1
-cols = 'D:Q'
-fname = 'SMM1 T-1330 temp data1.xlsx'  
-df = get_cleaned_df(folder, fname, skip_row, cols) 
+###############################################################################
+# check how to read T8220
+###############################################################################
 
-# multiple sheet
-start_time = time.time()
-skip_row = 3
-cols = 'F:R'
-fname = 'SMM1 T-1220 Plugging.xlsx'
-df = get_cleaned_df(folder, fname, skip_row, cols)
-end_time = time.time()
-time_elasped = end_time - start_time  
+
+
         
 ###############################################################################
 # Plot to see all the variables
@@ -286,6 +409,16 @@ _, n = df.shape
 for i in range(n):
     df.plot(y = i)
     plt.show()
+
+# plot to see if the with and without temp data are the same
+_, n = t_1220[1].shape
+for i in range(n):
+    t_1220[1].plot(y = i)
+    plt.show()
+    t_1220[2].plot(y = i)
+    plt.show()
+    
+
 
 
 ###############################################################################
