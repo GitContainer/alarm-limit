@@ -9,14 +9,13 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import time
-from functools import reduce
+import xlrd
 
 ###############################################################################
 # Set up the working directory
 ###############################################################################
 os.chdir('D:\\sumitomo\\code\\alarm-limit')
 os.listdir('.')
-
 
 ###############################################################################
 # function to get file size in human readable format
@@ -61,8 +60,6 @@ def print_file_sizes(cat_dict, folder):
     return
             
 
-
-
 folder1 = 'D:\\sumitomo\data'
 fnames1 = get_file_list_in_a_folder(folder1)
 
@@ -74,7 +71,6 @@ cat_dict2 = organize_the_file_names_in_cat(fnames2)
 
 print_file_sizes(cat_dict1, folder1)
 print_file_sizes(cat_dict2, folder2)    
-
 
 ###############################################################################
 # open a single file
@@ -92,7 +88,6 @@ open_a_single_file(fname, folder1)
 ###############################################################################
 # Open all files related to a given equipment
 ###############################################################################
-
 def open_all_files_of_a_tag(tag, cat_dict, folder):
     for fname in cat_dict[tag]:
         print(fname)
@@ -125,26 +120,6 @@ def open_all_files_in_a_folder(folder):
 
 folder = 'D:\\sumitomo\data'
 open_all_files_in_a_folder(folder)
-
-
-###############################################################################
-# reading files into python
-###############################################################################
-cat_dict1
-cat_dict2
-
-folder = 'D:\\sumitomo\data'
-fname = 'SMM1 T-1330 temp data1.xlsx'
-fname = 'SMM1 T-1220 normal data1.xlsx'
-fname = 'SMM1 T-1220 Plugging (with Temp profile).xlsx'
-
-###############################################################################
-# open file for inspection
-###############################################################################
-folder = 'D:\\sumitomo\data'
-fname = 'SMM1 T-1330 temp data1.xlsx'
-open_a_single_file(fname, folder)
-
 
 ###############################################################################
 # read the file into excel
@@ -185,16 +160,6 @@ def read_all_sheets(folder, fname, skip_row, cols):
             df_final = df
     return df_final
 
-#def read_all_sheets(folder, fname, skip_row, cols):
-#    
-#    df_seq = read_excel_file(folder, fname, skip_row, cols)
-#    
-#    for df in df_seq:
-#        try:
-#            df_final = df_final.append(df)
-#        except:
-#            df_final = df
-#    return df_final
     
 def create_date_index(df):
     df = df.rename(columns = {df.columns[0]: "datetime"})
@@ -216,8 +181,6 @@ def get_cleaned_df(folder, fname, skip_row, cols):
     return df
     
                     
-folder = 'D:\\sumitomo\data'
-
 ###############################################################################
 # Reading and saving files one by one
 ###############################################################################
@@ -233,16 +196,6 @@ print_tank_name_and_associated_files(cat_dict1)
 ###############################################################################
 # Opening and loading files for a given tank
 ###############################################################################
-folder = 'D:\\sumitomo\data'
-
-#def load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict):
-#    df = []
-#    for fname in cat_dict[tank_name]:
-#        open_a_single_file(fname, folder)
-#        df_i = get_cleaned_df(folder, fname, skip_row, cols)
-#        df.append(df_i)
-#    return df
-#
 
 def load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict, folder):
     df = []
@@ -271,13 +224,7 @@ cols = 'D:Q'
 
 open_a_single_file(fname, folder)
 
-t_1330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1) 
-
-# data inspection
-t_1330[0].columns
-t_1330[1].columns 
-t_1330[0].index
-t_1330[1].index 
+t_1330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder) 
  
 # putting the data in a singel data frame
 df_1330 = pd.concat(t_1330)
@@ -293,7 +240,6 @@ unpickled_df_1330 = pd.read_pickle("./df_1330.pkl")
 ###############################################################################
 # Tank 'T-8320'
 ###############################################################################
-folder = 'D:\\sumitomo\\data'
 tank_name = 'T-8320'
 fname = cat_dict1[tank_name][1]
 skip_row = 1
@@ -301,12 +247,6 @@ cols = 'C:O'
 
 open_a_single_file(fname, folder)
 t_8320 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder) 
-
-# data inspection
-t_8320[0].columns
-t_8320[1].columns 
-t_8320[0].index
-t_8320[1].index 
  
 # putting the data in a single data frame
 df_8320 = pd.concat(t_8320)
@@ -320,7 +260,6 @@ unpickled_df_8320 = pd.read_pickle("./df_8320.pkl")
 ###############################################################################
 # Tank 'T-8330'
 ###############################################################################
-folder = 'D:\\sumitomo\\data'
 tank_name = 'T-8330'
 fname = cat_dict1[tank_name][0]
 skip_row = 1
@@ -329,11 +268,6 @@ cols = 'D:Q'
 open_a_single_file(fname, folder)
 t_8330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder) 
 
-# data inspection
-t_8330[0].columns
-t_8330[1].columns 
-t_8330[0].index
-t_8330[1].index 
  
 # putting the data in a single data frame
 df_8330 = pd.concat(t_8330)
@@ -347,7 +281,6 @@ unpickled_df_8330 = pd.read_pickle("./df_8330.pkl")
 ###############################################################################
 # Tanks 'T-1220'
 ###############################################################################
-folder = 'D:\\sumitomo\\data'
 tank_name = 'T-1220'
 skip_row = [2, 3]
 cols = ['F:T', 'F:W']
@@ -358,7 +291,6 @@ time_start = time.time()
 t_1220 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder)
 time_end = time.time()
 time_elasped = time_end - time_start
-
 
 # pickle the file for easier retrieval
 t_1220[0].to_pickle("./df_1220_nr.pkl")
@@ -371,12 +303,9 @@ df_1220_pg = pd.read_pickle("./df_1220_pg.pkl")
 ###############################################################################
 # Tanks 'T-8220'
 ###############################################################################
-folder = 'D:\\sumitomo\\data'
 tank_name = 'T-8220'
 skip_row = [3, 3, 2]    # check these values
 cols = ['F:Y', 'F:R', 'E:S']  # check these values
-
-
 
 time_start = time.time()
 t_8220 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder)
@@ -393,45 +322,43 @@ df_8220_pg = pd.read_pickle("./df_8220_pg.pkl")
 df_8220_tm = pd.read_pickle("./df_8220_tm.pkl")
         
 ###############################################################################
-# Plot to see all the variables
+# Plot all variables in a data frame
 ###############################################################################
-# plot to see the variables
-_, n = df.shape
-for i in range(n):
-    df.plot(y = i)
-    plt.show()
-
-# plot to see if the with and without temp data are the same
-_, n = t_1220[1].shape
-for i in range(n):
-    t_1220[1].plot(y = i)
-    plt.show()
-    t_1220[2].plot(y = i)
-    plt.show()
+def plot_individual_variables(df):
     
+    _, n = df.shape
+    
+    for i in range(n):
+        df.plot(y = i)
+        plt.show()
+    return
 
-
+plot_individual_variables(df_8220_pg)
 
 ###############################################################################
-# reading individual lines of a data frame
+# reading individual line of an excel sheet
 ###############################################################################
-skip_row = 1
-cols = 'G:R'
+
+def read_data_from_xl(fname, sheet_i, row = None, col = None):
+    
+    wb = xlrd.open_workbook(full_path)
+    sheet = wb.sheet_by_index(sheet_i)
+    
+    if all([row, col]):
+        return sheet.cell_value(row, col)
+    if row:
+        return sheet.row_values(row)
+    if col:
+        return sheet.col_values(col) 
+    
+    
 folder = 'D:\\sumitomo\data'
-fname = 'SMM1 T-1220 Plugging.xlsx'
+tank_name = 'T-8220'
+fname = cat_dict1[tank_name][0]
 full_path = os.path.join(folder, fname)
 
-# check file visually
-open_a_single_file(fname, folder)  # check the file
-
-# read individual lines
-description = pd.read_excel(full_path, sheet_name = 0, usecols = cols, skiprows = skip_row, nrows = 1,
-                     header = None)
-
-unit = pd.read_excel(full_path, sheet_name = 0, usecols = cols, skiprows = skip_row + 1, nrows = 1,
-                     header = None)
-
-
+col_names = read_data_from_xl(fname, 0, 2)
+print(col_names)
 
 ###############################################################################
 # Open the graphics file
