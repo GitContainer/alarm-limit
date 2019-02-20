@@ -165,7 +165,7 @@ def remove_duplicate_columns(df):
     new_colnames = []
     
     for col in colnames:
-        new_colnames.append(col.upper)
+        new_colnames.append(col.upper())
         
     df.columns = new_colnames
     df = df.loc[:, ~df.columns.duplicated()]
@@ -253,9 +253,7 @@ def load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict, folder):
         open_a_single_file(fname, folder)
         try:
             df_i = get_cleaned_df(folder, fname, skip_row[i], cols[i])
-            df_i = get_cleaned_df(folder, fname, skip_row[i], cols[i])
         except:
-            df_i = get_cleaned_df(folder, fname, skip_row, cols)
             df_i = get_cleaned_df(folder, fname, skip_row, cols)
         
         df.append(df_i)
@@ -302,7 +300,7 @@ skip_row = 1
 cols = 'C:O'
 
 open_a_single_file(fname, folder)
-t_8320 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1) 
+t_8320 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder) 
 
 # data inspection
 t_8320[0].columns
@@ -329,7 +327,7 @@ skip_row = 1
 cols = 'D:Q'
 
 open_a_single_file(fname, folder)
-t_8330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1) 
+t_8330 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder) 
 
 # data inspection
 t_8330[0].columns
@@ -375,10 +373,10 @@ df_1220_pg = pd.read_pickle("./df_1220_pg.pkl")
 ###############################################################################
 folder = 'D:\\sumitomo\\data'
 tank_name = 'T-8220'
-skip_row = [3, 2]    # check these values
-cols = ['F:Y', 'E:S']  # check these values
+skip_row = [3, 3, 2]    # check these values
+cols = ['F:Y', 'F:R', 'E:S']  # check these values
 
-fname = cat_dict1[tank_name][1]
+
 
 time_start = time.time()
 t_8220 = load_files_for_a_given_tank(tank_name, skip_row, cols, cat_dict1, folder)
@@ -386,59 +384,13 @@ time_end = time.time()
 time_elasped = time_end - time_start
 
 
+# pickle the file for easier retrieval
+t_8220[0].to_pickle("./df_8220_pg.pkl")
+t_8220[1].to_pickle("./df_8220_tm.pkl")  
 
-
-df_seq = read_excel_file(folder, fname, skip_row[0], cols[0])
-
-# read all the sheets
-df1 = next(df_seq)
-df2 = next(df_seq)
-df3 = next(df_seq)
-
-# find out which columns are missing
-col1 = set(df1.columns.values)
-col2 = set(df2.columns.values)
-col1 - col2
-
-# remove the strings
-col1_val = pd.to_numeric(df1['TI8221A.pv'], errors='coerce')
-col2_val = pd.to_numeric(df1['TI8221A.pv'], errors='coerce')
-
-col1_val = col1_val.dropna(how='any')
-col2_val = col2_val.dropna(how='any')
-
-# checking if the values are indeed duplicated
-plt.plot(col1_val)
-plt.plot(col2_val)
-
-
-
-
-    
-
-
-
-
-###############################################################################
-# Column Renaming
-###############################################################################
-col1 = df1.columns.values 
-new_colnames = []
-for item in col1:
-    print(item.upper())
-    new_colnames.append(item.upper())
-
-df1.columns = new_colnames
-# Remove the duplicate columns
-df1 = df1.loc[:,~df1.columns.duplicated()]
-
-
-###############################################################################
-# check how to read T8220
-###############################################################################
-
-
-
+# retrieve the pickled file
+df_8220_pg = pd.read_pickle("./df_8220_pg.pkl") 
+df_8220_tm = pd.read_pickle("./df_8220_tm.pkl")
         
 ###############################################################################
 # Plot to see all the variables
@@ -482,16 +434,16 @@ unit = pd.read_excel(full_path, sheet_name = 0, usecols = cols, skiprows = skip_
 
 
 ###############################################################################
-# reading and visualizing the files programmatically
+# Open the graphics file
 ###############################################################################
-# opening the graphics files
-folder = 'D:\\sumitomo\data'
-fnames = os.listdir(folder)
+def open_graphics_file(folder):
+    fnames = os.listdir(folder)    
+    fname = [s for s in fnames if 'graphics' in s]    
+    full_path = os.path.join(folder, fname[0])
+    os.startfile(full_path)
+    return
 
-fname = [s for s in fnames if 'graphics' in s]
-
-full_path = os.path.join(folder, fname[0])
-os.startfile(full_path)
+open_graphics_file(folder)
 
 
 
